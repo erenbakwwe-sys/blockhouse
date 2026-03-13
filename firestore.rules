@@ -10,9 +10,9 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      // For this prototype, we'll allow all operations so the app works without Firebase Auth configuration.
       // In a real app, you would check a custom claim or an admin collection.
-      // For this demo, we'll allow authenticated users to act as admins.
-      return isAuthenticated() && request.auth.token.email == "erenbakwwe@gmail.com" && request.auth.token.email_verified == true;
+      return true;
     }
 
     // ===============================================================

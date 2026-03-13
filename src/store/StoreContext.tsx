@@ -47,27 +47,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [isAuthReady, setIsAuthReady] = useState(true);
 
   // Sync cart to local storage
   useEffect(() => { localStorage.setItem('cart_v2', JSON.stringify(cart)); }, [cart]);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsAuthReady(true);
-    });
-    return () => unsubscribe();
-  }, []);
-
   // Sync state from Firebase
   useEffect(() => {
-    if (!isAuthReady) return;
-
     const unsubMenu = onSnapshot(collection(db, 'menu'), (snapshot) => {
-      if (snapshot.empty && user) {
-        // Seed initial menu if empty and user is admin
+      if (snapshot.empty) {
+        // Seed initial menu if empty
         const batch = writeBatch(db);
         initialMenu.forEach(item => {
           batch.set(doc(collection(db, 'menu'), item.id), item);
@@ -79,8 +68,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }, console.error);
 
     const unsubTables = onSnapshot(collection(db, 'tables'), (snapshot) => {
-      if (snapshot.empty && user) {
-        // Seed initial tables if empty and user is admin
+      if (snapshot.empty) {
+        // Seed initial tables if empty
         const batch = writeBatch(db);
         initialTables.forEach(table => {
           batch.set(doc(collection(db, 'tables'), table.id), table);
@@ -99,17 +88,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setCalls(snapshot.docs.map(doc => doc.data() as WaiterCall));
     }, console.error);
 
-    let unsubExpenses = () => {};
-    if (user) {
-      unsubExpenses = onSnapshot(query(collection(db, 'expenses'), orderBy('createdAt', 'desc')), (snapshot) => {
-        setExpenses(snapshot.docs.map(doc => doc.data() as Expense));
-      }, console.error);
-    }
+    const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), orderBy('createdAt', 'desc')), (snapshot) => {
+      setExpenses(snapshot.docs.map(doc => doc.data() as Expense));
+    }, console.error);
 
     const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
       if (docSnap.exists()) {
         setSettings(docSnap.data() as GlobalSettings);
-      } else if (user) {
+      } else {
         setDoc(doc(db, 'settings', 'global'), { estimatedPrepTime: 15 }).catch(console.error);
       }
     }, console.error);
@@ -122,7 +108,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       unsubExpenses();
       unsubSettings();
     };
-  }, [isAuthReady, user]);
+  }, []);
 
   const addOrder = async (orderData: Omit<Order, 'id' | 'createdAt'>) => {
     if (!isAuthReady) return;

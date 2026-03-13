@@ -4,9 +4,8 @@ import { useStore } from '../store/StoreContext';
 import React, { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import ThemeToggle from './ThemeToggle';
-import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
-import { db, auth } from '../firebase';
-import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
+import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export default function AdminLayout() {
   const { calls } = useStore();
@@ -14,21 +13,16 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const activeCalls = calls.filter(c => c.status === 'active').length;
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('adminAuth') === 'true';
+  });
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
   const [blinkOrder, setBlinkOrder] = useState(false);
   const [blinkCall, setBlinkCall] = useState(false);
   const locationRef = useRef(location.pathname);
   const initialLoadRef = useRef(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAuthenticated(!!user);
-      setIsCheckingAuth(false);
-    });
-    return () => unsubscribe();
-  }, []);
 
   useEffect(() => {
     locationRef.current = location.pathname;
@@ -149,34 +143,24 @@ export default function AdminLayout() {
     };
   }, [isAuthenticated]);
 
-  const handleLogin = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Simple hardcoded credentials for prototype
+    if (username === 'admin' && password === 'admin123') {
+      setIsAuthenticated(true);
+      localStorage.setItem('adminAuth', 'true');
       toast.success('Erfolgreich eingeloggt');
-    } catch (error) {
-      console.error(error);
-      toast.error('Fehler beim Login');
+    } else {
+      toast.error('Falscher Benutzername oder Passwort');
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate('/admin');
-      toast('Erfolgreich abgemeldet', { icon: '👋' });
-    } catch (error) {
-      console.error(error);
-    }
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('adminAuth');
+    navigate('/admin');
+    toast('Erfolgreich abgemeldet', { icon: '👋' });
   };
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-[#111] flex items-center justify-center p-4 font-sans text-gray-900 dark:text-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
-      </div>
-    );
-  }
 
   if (!isAuthenticated) {
     return (
@@ -190,12 +174,40 @@ export default function AdminLayout() {
             <p className="text-gray-500 dark:text-gray-400 mt-2 text-center">Bitte melden Sie sich an, um auf das Admin-Panel zuzugreifen.</p>
           </div>
 
-          <button
-            onClick={handleLogin}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
-          >
-            Mit Google anmelden
-          </button>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Benutzername</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full bg-gray-100 dark:bg-[#222] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-red-500 transition-colors"
+                placeholder="admin"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Passwort</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-gray-100 dark:bg-[#222] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-red-500 transition-colors"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-xl transition-colors mt-6"
+            >
+              Einloggen
+            </button>
+          </form>
+          
+          <div className="mt-6 text-center text-xs text-gray-500">
+            <p>Demo-Zugang: admin / admin123</p>
+          </div>
         </div>
       </div>
     );
