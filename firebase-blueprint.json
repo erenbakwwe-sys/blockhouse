@@ -1,0 +1,120 @@
+{
+  "entities": {
+    "MenuItem": {
+      "title": "MenuItem",
+      "description": "Represents a menu item.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "image": { "type": "string", "format": "uri" }
+      },
+      "required": ["id", "name", "description", "price", "category", "image"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Represents a customer order.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "table": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "menuItemId": { "type": "string" },
+              "name": { "type": "string" },
+              "price": { "type": "number" },
+              "quantity": { "type": "number" },
+              "notes": { "type": "string" },
+              "options": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "required": ["id", "menuItemId", "name", "price", "quantity"]
+          }
+        },
+        "status": { "type": "string", "enum": ["pending", "preparing", "ready", "served", "paid"] },
+        "total": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "table", "items", "status", "total", "createdAt"]
+    },
+    "WaiterCall": {
+      "title": "WaiterCall",
+      "description": "Represents a call for a waiter.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "table": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "resolved"] },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "table", "status", "createdAt"]
+    },
+    "Table": {
+      "title": "Table",
+      "description": "Represents a table.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "number": { "type": "string" }
+      },
+      "required": ["id", "number"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Represents an expense.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "description", "amount", "category", "createdAt"]
+    },
+    "GlobalSettings": {
+      "title": "GlobalSettings",
+      "description": "Represents global settings.",
+      "type": "object",
+      "properties": {
+        "estimatedPrepTime": { "type": "number" }
+      },
+      "required": ["estimatedPrepTime"]
+    }
+  },
+  "firestore": {
+    "menu": {
+      "schema": { "$ref": "#/entities/MenuItem" },
+      "description": "Collection of menu items."
+    },
+    "orders": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Collection of orders."
+    },
+    "calls": {
+      "schema": { "$ref": "#/entities/WaiterCall" },
+      "description": "Collection of waiter calls."
+    },
+    "tables": {
+      "schema": { "$ref": "#/entities/Table" },
+      "description": "Collection of tables."
+    },
+    "expenses": {
+      "schema": { "$ref": "#/entities/Expense" },
+      "description": "Collection of expenses."
+    },
+    "settings": {
+      "schema": { "$ref": "#/entities/GlobalSettings" },
+      "description": "Collection of global settings."
+    }
+  }
+}

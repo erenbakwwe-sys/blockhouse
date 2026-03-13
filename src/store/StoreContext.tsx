@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
 import { Order, WaiterCall, Table, MenuItem, Expense, GlobalSettings, OrderItem } from '../types';
 import { initialMenu, initialTables } from '../data/menu';
-
-export const socket = io();
+import { db, auth } from '../firebase';
+import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, getDocs, writeBatch, query, orderBy } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface StoreState {
   orders: Order[];
@@ -47,65 +47,132 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
   // Sync cart to local storage
   useEffect(() => { localStorage.setItem('cart_v2', JSON.stringify(cart)); }, [cart]);
 
-  // Sync state from WebSocket server
   useEffect(() => {
-    socket.on('initialState', (state) => {
-      setOrders(state.orders || []);
-      setCalls(state.calls || []);
-      setMenu(state.menu || []);
-      setTables(state.tables || []);
-      setExpenses(state.expenses || []);
-      if (state.settings) setSettings(state.settings);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAuthReady(true);
     });
-
-    socket.on('stateUpdate', (state) => {
-      setOrders(state.orders || []);
-      setCalls(state.calls || []);
-      setMenu(state.menu || []);
-      setTables(state.tables || []);
-      setExpenses(state.expenses || []);
-      if (state.settings) setSettings(state.settings);
-    });
-
-    return () => {
-      socket.off('initialState');
-      socket.off('stateUpdate');
-    };
+    return () => unsubscribe();
   }, []);
 
-  const addOrder = (orderData: Omit<Order, 'id' | 'createdAt'>) => {
+  // Sync state from Firebase
+  useEffect(() => {
+    if (!isAuthReady) return;
+
+    const unsubMenu = onSnapshot(collection(db, 'menu'), (snapshot) => {
+      if (snapshot.empty && user) {
+        // Seed initial menu if empty and user is admin
+        const batch = writeBatch(db);
+        initialMenu.forEach(item => {
+          batch.set(doc(collection(db, 'menu'), item.id), item);
+        });
+        batch.commit().catch(console.error);
+      } else {
+        setMenu(snapshot.docs.map(doc => doc.data() as MenuItem));
+      }
+    }, console.error);
+
+    const unsubTables = onSnapshot(collection(db, 'tables'), (snapshot) => {
+      if (snapshot.empty && user) {
+        // Seed initial tables if empty and user is admin
+        const batch = writeBatch(db);
+        initialTables.forEach(table => {
+          batch.set(doc(collection(db, 'tables'), table.id), table);
+        });
+        batch.commit().catch(console.error);
+      } else {
+        setTables(snapshot.docs.map(doc => doc.data() as Table));
+      }
+    }, console.error);
+
+    const unsubOrders = onSnapshot(query(collection(db, 'orders'), orderBy('createdAt', 'desc')), (snapshot) => {
+      setOrders(snapshot.docs.map(doc => doc.data() as Order));
+    }, console.error);
+
+    const unsubCalls = onSnapshot(query(collection(db, 'calls'), orderBy('createdAt', 'desc')), (snapshot) => {
+      setCalls(snapshot.docs.map(doc => doc.data() as WaiterCall));
+    }, console.error);
+
+    let unsubExpenses = () => {};
+    if (user) {
+      unsubExpenses = onSnapshot(query(collection(db, 'expenses'), orderBy('createdAt', 'desc')), (snapshot) => {
+        setExpenses(snapshot.docs.map(doc => doc.data() as Expense));
+      }, console.error);
+    }
+
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+      if (docSnap.exists()) {
+        setSettings(docSnap.data() as GlobalSettings);
+      } else if (user) {
+        setDoc(doc(db, 'settings', 'global'), { estimatedPrepTime: 15 }).catch(console.error);
+      }
+    }, console.error);
+
+    return () => {
+      unsubMenu();
+      unsubTables();
+      unsubOrders();
+      unsubCalls();
+      unsubExpenses();
+      unsubSettings();
+    };
+  }, [isAuthReady, user]);
+
+  const addOrder = async (orderData: Omit<Order, 'id' | 'createdAt'>) => {
+    if (!isAuthReady) return;
     const newOrder: Order = {
       ...orderData,
       id: Math.random().toString(36).substring(2, 9),
       createdAt: Date.now(),
     };
-    socket.emit('addOrder', newOrder);
+    try {
+      await setDoc(doc(collection(db, 'orders'), newOrder.id), newOrder);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    socket.emit('updateOrderStatus', { orderId, status });
+  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+    if (!isAuthReady) return;
+    try {
+      await updateDoc(doc(db, 'orders', orderId), { status });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const addCall = (table: string) => {
+  const addCall = async (table: string) => {
+    if (!isAuthReady) return;
     const newCall: WaiterCall = {
       id: Math.random().toString(36).substring(2, 9),
       table,
       status: 'active',
       createdAt: Date.now(),
     };
-    socket.emit('addCall', newCall);
+    try {
+      await setDoc(doc(collection(db, 'calls'), newCall.id), newCall);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const resolveCall = (callId: string) => {
-    socket.emit('resolveCall', callId);
+  const resolveCall = async (callId: string) => {
+    if (!isAuthReady) return;
+    try {
+      await updateDoc(doc(db, 'calls', callId), { status: 'resolved' });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const addToCart = (itemData: Omit<OrderItem, 'id'>) => {
     setCart((prev) => {
-      // Check if identical item exists (same menu item, notes, options)
       const existingIndex = prev.findIndex(i => 
         i.menuItemId === itemData.menuItemId && 
         i.notes === itemData.notes && 
@@ -140,38 +207,80 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => setCart([]);
 
-  const addMenuItem = (itemData: Omit<MenuItem, 'id'>) => {
+  const addMenuItem = async (itemData: Omit<MenuItem, 'id'>) => {
+    if (!isAuthReady) return;
     const newItem: MenuItem = { ...itemData, id: Math.random().toString(36).substring(2, 9) };
-    socket.emit('addMenuItem', newItem);
+    try {
+      await setDoc(doc(collection(db, 'menu'), newItem.id), newItem);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const updateMenuItem = (id: string, itemData: Partial<MenuItem>) => {
-    socket.emit('updateMenuItem', { id, item: itemData });
+  const updateMenuItem = async (id: string, itemData: Partial<MenuItem>) => {
+    if (!isAuthReady) return;
+    try {
+      await updateDoc(doc(db, 'menu', id), itemData);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const deleteMenuItem = (id: string) => {
-    socket.emit('deleteMenuItem', id);
+  const deleteMenuItem = async (id: string) => {
+    if (!isAuthReady) return;
+    try {
+      await deleteDoc(doc(db, 'menu', id));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const clearHistory = () => {
-    socket.emit('clearHistory');
+  const clearHistory = async () => {
+    if (!isAuthReady) return;
+    try {
+      const ordersSnap = await getDocs(collection(db, 'orders'));
+      const callsSnap = await getDocs(collection(db, 'calls'));
+      
+      const batch = writeBatch(db);
+      ordersSnap.docs.forEach(doc => batch.delete(doc.ref));
+      callsSnap.docs.forEach(doc => batch.delete(doc.ref));
+      
+      await batch.commit();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const addExpense = (expenseData: Omit<Expense, 'id' | 'createdAt'>) => {
+  const addExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt'>) => {
+    if (!isAuthReady) return;
     const newExpense: Expense = {
       ...expenseData,
       id: Math.random().toString(36).substring(2, 9),
       createdAt: Date.now(),
     };
-    socket.emit('addExpense', newExpense);
+    try {
+      await setDoc(doc(collection(db, 'expenses'), newExpense.id), newExpense);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const deleteExpense = (id: string) => {
-    socket.emit('deleteExpense', id);
+  const deleteExpense = async (id: string) => {
+    if (!isAuthReady) return;
+    try {
+      await deleteDoc(doc(db, 'expenses', id));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const updateSettings = (newSettings: Partial<GlobalSettings>) => {
-    socket.emit('updateSettings', newSettings);
+  const updateSettings = async (newSettings: Partial<GlobalSettings>) => {
+    if (!isAuthReady) return;
+    try {
+      await updateDoc(doc(db, 'settings', 'global'), newSettings);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (

@@ -1,9 +1,12 @@
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, QrCode, UtensilsCrossed, Bell, LogOut, History, Lock, LineChart } from 'lucide-react';
-import { useStore, socket } from '../store/StoreContext';
+import { useStore } from '../store/StoreContext';
 import React, { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import ThemeToggle from './ThemeToggle';
+import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
+import { db, auth } from '../firebase';
+import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
 
 export default function AdminLayout() {
   const { calls } = useStore();
@@ -11,15 +14,21 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const activeCalls = calls.filter(c => c.status === 'active').length;
 
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('adminAuth') === 'true';
-  });
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const [blinkOrder, setBlinkOrder] = useState(false);
   const [blinkCall, setBlinkCall] = useState(false);
   const locationRef = useRef(location.pathname);
+  const initialLoadRef = useRef(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAuthenticated(!!user);
+      setIsCheckingAuth(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     locationRef.current = location.pathname;
@@ -65,65 +74,109 @@ export default function AdminLayout() {
       }
     };
 
-    const handleNewOrder = (order: any) => {
-      playSound();
-      if (locationRef.current !== '/admin') {
-        setBlinkOrder(true);
-      }
-      toast.success(`Neue Bestellung (Tisch ${order.table})`, {
-        icon: '🍽️',
-        duration: 8000,
-        style: {
-          background: '#222',
-          color: '#fff',
-          border: '1px solid #ef4444'
+    // Listen for new orders
+    const now = Date.now();
+    const ordersQuery = query(
+      collection(db, 'orders'),
+      where('createdAt', '>=', now),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubOrders = onSnapshot(ordersQuery, (snapshot) => {
+      if (initialLoadRef.current) return; // Skip initial load
+      
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const order = change.doc.data();
+          playSound();
+          if (locationRef.current !== '/admin') {
+            setBlinkOrder(true);
+          }
+          toast.success(`Neue Bestellung (Tisch ${order.table})`, {
+            icon: '🍽️',
+            duration: 8000,
+            style: {
+              background: '#222',
+              color: '#fff',
+              border: '1px solid #ef4444'
+            }
+          });
         }
       });
-    };
+    });
 
-    const handleNewCall = (call: any) => {
-      playSound();
-      if (locationRef.current !== '/admin/calls') {
-        setBlinkCall(true);
-      }
-      toast(`Kellner-Ruf (Tisch ${call.table})`, {
-        icon: '🔔',
-        duration: 8000,
-        style: {
-          background: '#222',
-          color: '#fff',
-          border: '1px solid #ef4444'
+    // Listen for new calls
+    const callsQuery = query(
+      collection(db, 'calls'),
+      where('createdAt', '>=', now),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubCalls = onSnapshot(callsQuery, (snapshot) => {
+      if (initialLoadRef.current) return; // Skip initial load
+      
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const call = change.doc.data();
+          if (call.status === 'active') {
+            playSound();
+            if (locationRef.current !== '/admin/calls') {
+              setBlinkCall(true);
+            }
+            toast(`Kellner-Ruf (Tisch ${call.table})`, {
+              icon: '🔔',
+              duration: 8000,
+              style: {
+                background: '#222',
+                color: '#fff',
+                border: '1px solid #ef4444'
+              }
+            });
+          }
         }
       });
-    };
+    });
 
-    socket.on('newOrder', handleNewOrder);
-    socket.on('newCall', handleNewCall);
+    // Set initial load to false after a short delay
+    const timer = setTimeout(() => {
+      initialLoadRef.current = false;
+    }, 1000);
 
     return () => {
-      socket.off('newOrder', handleNewOrder);
-      socket.off('newCall', handleNewCall);
+      unsubOrders();
+      unsubCalls();
+      clearTimeout(timer);
     };
   }, [isAuthenticated]);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simple hardcoded credentials for prototype
-    if (username === 'admin' && password === 'admin123') {
-      setIsAuthenticated(true);
-      localStorage.setItem('adminAuth', 'true');
+  const handleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
       toast.success('Erfolgreich eingeloggt');
-    } else {
-      toast.error('Falscher Benutzername oder Passwort');
+    } catch (error) {
+      console.error(error);
+      toast.error('Fehler beim Login');
     }
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem('adminAuth');
-    navigate('/admin');
-    toast('Erfolgreich abgemeldet', { icon: '👋' });
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/admin');
+      toast('Erfolgreich abgemeldet', { icon: '👋' });
+    } catch (error) {
+      console.error(error);
+    }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-[#111] flex items-center justify-center p-4 font-sans text-gray-900 dark:text-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -137,40 +190,12 @@ export default function AdminLayout() {
             <p className="text-gray-500 dark:text-gray-400 mt-2 text-center">Bitte melden Sie sich an, um auf das Admin-Panel zuzugreifen.</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Benutzername</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-gray-100 dark:bg-[#222] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-red-500 transition-colors"
-                placeholder="admin"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Passwort</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-gray-100 dark:bg-[#222] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-red-500 transition-colors"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-xl transition-colors mt-6"
-            >
-              Einloggen
-            </button>
-          </form>
-          
-          <div className="mt-6 text-center text-xs text-gray-500">
-            <p>Demo-Zugang: admin / admin123</p>
-          </div>
+          <button
+            onClick={handleLogin}
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+          >
+            Mit Google anmelden
+          </button>
         </div>
       </div>
     );
