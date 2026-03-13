@@ -112,13 +112,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const addOrder = async (orderData: Omit<Order, 'id' | 'createdAt'>) => {
     if (!isAuthReady) return;
+    
     const newOrder: Order = {
       ...orderData,
       id: Math.random().toString(36).substring(2, 9),
       createdAt: Date.now(),
     };
+    
+    // Completely sanitize the object to remove any undefined values or non-serializable data
+    const sanitizedOrder = JSON.parse(JSON.stringify(newOrder));
+    
     try {
-      await setDoc(doc(collection(db, 'orders'), newOrder.id), newOrder);
+      await setDoc(doc(collection(db, 'orders'), sanitizedOrder.id), sanitizedOrder);
     } catch (e) {
       console.error(e);
     }

@@ -33,7 +33,7 @@ service cloud.firestore {
              data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
              data.table is string && data.table.size() > 0 && data.table.size() < 50 &&
              data.items is list && data.items.size() <= 100 &&
-             data.status in ['pending', 'preparing', 'ready', 'served', 'paid'] &&
+             data.status in ['received', 'pending', 'preparing', 'ready', 'served', 'paid'] &&
              data.total is number && data.total >= 0 &&
              data.createdAt is number;
     }
