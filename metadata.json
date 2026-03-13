@@ -1,0 +1,5 @@
+{
+  "name": "Restaurant App",
+  "description": "A restaurant ordering and admin system",
+  "requestFramePermissions": ["microphone"]
+}
