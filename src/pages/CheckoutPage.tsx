@@ -16,9 +16,18 @@ export default function CheckoutPage() {
   
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tipPercentage, setTipPercentage] = useState<number>(0);
 
   const cartItems = cart;
-  const cartTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const subTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const tipAmount = subTotal * tipPercentage;
+  const cartTotal = subTotal + tipAmount;
+
+  // Find an upsell item (e.g., a drink or dessert not in cart)
+  const upsellItem = menu.find(item => 
+    (item.category.toLowerCase().includes('getränk') || item.category.toLowerCase().includes('dessert') || item.category.toLowerCase().includes('drink')) && 
+    !cartItems.some(cartItem => cartItem.menuItemId === item.id)
+  );
 
   const handleCheckout = () => {
     if (cartItems.length === 0) {
@@ -133,6 +142,55 @@ export default function CheckoutPage() {
           </div>
         </section>
 
+        {/* Upsell Section */}
+        {upsellItem && (
+          <section className="bg-red-500/5 border border-red-500/20 rounded-2xl p-4">
+            <h2 className="text-sm font-bold text-red-500 mb-3 flex items-center gap-2">
+              <span>✨</span> Dazu empfehlen wir
+            </h2>
+            <div className="flex items-center gap-4">
+              <img src={upsellItem.image} alt={upsellItem.name} className="w-16 h-16 rounded-xl object-cover" />
+              <div className="flex-1">
+                <h3 className="font-bold text-sm">{upsellItem.name}</h3>
+                <p className="text-red-500 font-medium text-sm">{formatCurrency(upsellItem.price)}</p>
+              </div>
+              <button 
+                onClick={() => addToCart({
+                  menuItemId: upsellItem.id,
+                  name: upsellItem.name,
+                  price: upsellItem.price,
+                  quantity: 1,
+                  notes: '',
+                  options: []
+                })}
+                className="bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-700 transition-colors"
+              >
+                Hinzufügen
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* Tip Section */}
+        <section>
+          <h2 className="text-lg font-bold mb-4 text-gray-300">Trinkgeld für das Team</h2>
+          <div className="flex gap-2">
+            {[0, 0.1, 0.15, 0.2].map((percentage) => (
+              <button
+                key={percentage}
+                onClick={() => setTipPercentage(percentage)}
+                className={`flex-1 py-3 rounded-xl font-medium transition-colors border ${
+                  tipPercentage === percentage
+                    ? 'bg-red-600 text-white border-red-600'
+                    : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#222]'
+                }`}
+              >
+                {percentage === 0 ? 'Keins' : `${percentage * 100}%`}
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* Payment Method */}
         <section>
           <h2 className="text-lg font-bold mb-4 text-gray-300">Zahlungsmethode</h2>
@@ -193,8 +251,14 @@ export default function CheckoutPage() {
         <section className="bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl border border-gray-100 dark:border-white/5">
           <div className="flex justify-between mb-2 text-gray-500 dark:text-gray-400">
             <span>Zwischensumme</span>
-            <span>{formatCurrency(cartTotal)}</span>
+            <span>{formatCurrency(subTotal)}</span>
           </div>
+          {tipAmount > 0 && (
+            <div className="flex justify-between mb-2 text-gray-500 dark:text-gray-400">
+              <span>Trinkgeld</span>
+              <span>{formatCurrency(tipAmount)}</span>
+            </div>
+          )}
           <div className="flex justify-between mb-4 text-gray-500 dark:text-gray-400">
             <span>Service</span>
             <span>Inklusive</span>

@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, QrCode, UtensilsCrossed, Bell, LogOut, History, Lock, LineChart, Menu, X } from 'lucide-react';
+import { LayoutDashboard, QrCode, UtensilsCrossed, Bell, LogOut, History, Lock, LineChart, Menu, X, ArrowLeft } from 'lucide-react';
 import { useStore } from '../store/StoreContext';
 import React, { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
@@ -78,17 +78,21 @@ export default function AdminLayout() {
       orderBy('createdAt', 'desc')
     );
 
-    const unsubOrders = onSnapshot(ordersQuery, (snapshot) => {
-      if (initialLoadRef.current) return; // Skip initial load
-      
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added') {
-          const order = change.doc.data();
-          playSound();
-          if (locationRef.current !== '/admin') {
-            setBlinkOrder(true);
-          }
-          toast.success(`Neue Bestellung (Tisch ${order.table})`, {
+    let newOrdersCount = 0;
+    let newCallsCount = 0;
+    let notificationTimeout: NodeJS.Timeout | null = null;
+
+    const flushNotifications = () => {
+      if (newOrdersCount > 0) {
+        playSound();
+        if (locationRef.current !== '/admin') {
+          setBlinkOrder(true);
+        }
+        toast.success(
+          newOrdersCount === 1 
+            ? `Neue Bestellung` 
+            : `${newOrdersCount} Neue Bestellungen`, 
+          {
             icon: '🍽️',
             duration: 8000,
             style: {
@@ -96,9 +100,49 @@ export default function AdminLayout() {
               color: '#fff',
               border: '1px solid #ef4444'
             }
-          });
+          }
+        );
+        newOrdersCount = 0;
+      }
+
+      if (newCallsCount > 0) {
+        playSound();
+        if (locationRef.current !== '/admin/calls') {
+          setBlinkCall(true);
+        }
+        toast(
+          newCallsCount === 1 
+            ? `Kellner-Ruf` 
+            : `${newCallsCount} neue Kellner-Rufe`, 
+          {
+            icon: '🔔',
+            duration: 8000,
+            style: {
+              background: '#222',
+              color: '#fff',
+              border: '1px solid #ef4444'
+            }
+          }
+        );
+        newCallsCount = 0;
+      }
+      notificationTimeout = null;
+    };
+
+    const unsubOrders = onSnapshot(ordersQuery, (snapshot) => {
+      if (initialLoadRef.current) return; // Skip initial load
+      
+      let added = false;
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          newOrdersCount++;
+          added = true;
         }
       });
+
+      if (added && !notificationTimeout) {
+        notificationTimeout = setTimeout(flushNotifications, 1000);
+      }
     });
 
     // Listen for new calls
@@ -111,26 +155,20 @@ export default function AdminLayout() {
     const unsubCalls = onSnapshot(callsQuery, (snapshot) => {
       if (initialLoadRef.current) return; // Skip initial load
       
+      let added = false;
       snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
           const call = change.doc.data();
           if (call.status === 'active') {
-            playSound();
-            if (locationRef.current !== '/admin/calls') {
-              setBlinkCall(true);
-            }
-            toast(`Kellner-Ruf (Tisch ${call.table})`, {
-              icon: '🔔',
-              duration: 8000,
-              style: {
-                background: '#222',
-                color: '#fff',
-                border: '1px solid #ef4444'
-              }
-            });
+            newCallsCount++;
+            added = true;
           }
         }
       });
+
+      if (added && !notificationTimeout) {
+        notificationTimeout = setTimeout(flushNotifications, 1000);
+      }
     });
 
     // Set initial load to false after a short delay
@@ -296,10 +334,17 @@ export default function AdminLayout() {
           </NavLink>
         </nav>
         
-        <div className="p-4 border-t border-gray-200 dark:border-white/10 mt-auto">
+        <div className="p-4 border-t border-gray-200 dark:border-white/10 mt-auto space-y-2">
+          <NavLink 
+            to="/"
+            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <ArrowLeft size={20} />
+            <span className="font-medium">Zurück zur Webseite</span>
+          </NavLink>
           <button 
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-white/5 hover:text-gray-900 dark:text-white transition-colors"
+            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <LogOut size={20} />
             <span className="font-medium">Abmelden</span>

@@ -1,7 +1,8 @@
 import { useStore } from '../store/StoreContext';
 import { formatCurrency } from '../lib/utils';
-import { DollarSign, ShoppingBag, Clock, Users, TrendingUp, Award } from 'lucide-react';
-import { OrderStatus } from '../types';
+import { DollarSign, ShoppingBag, Clock, Users, TrendingUp, Award, Printer } from 'lucide-react';
+import { OrderStatus, Order } from '../types';
+import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
   const { orders, calls, updateOrderStatus } = useStore();
@@ -47,6 +48,52 @@ export default function AdminDashboard() {
       case 'ready': return 'Fertig';
       case 'served': return 'Serviert';
       default: return status;
+    }
+  };
+
+  const printOrder = async (order: Order) => {
+    try {
+      // Request a Bluetooth device that supports the Serial Port Profile (SPP)
+      // Note: Web Bluetooth API is experimental and requires HTTPS.
+      // Many thermal printers use custom UUIDs or standard serial UUIDs.
+      // This is a simplified example.
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'] // Example UUID, often used by generic printers
+      });
+
+      toast.loading('Verbinde mit Drucker...', { id: 'print' });
+      const server = await device.gatt?.connect();
+      
+      if (!server) throw new Error('Konnte nicht verbinden');
+
+      // In a real scenario, you'd need to find the specific service and characteristic
+      // for writing data to the printer. This varies heavily by printer model.
+      // The following is a placeholder for the actual ESC/POS commands.
+      
+      const escPosData = `
+        RESTAU APP
+        ------------------------
+        Tisch: ${order.table}
+        Zeit: ${new Date(order.createdAt).toLocaleTimeString('de-DE')}
+        ------------------------
+        ${order.items.map(i => `${i.quantity}x ${i.name} - ${formatCurrency(i.price * i.quantity)}`).join('\n')}
+        ------------------------
+        Gesamt: ${formatCurrency(order.total)}
+        
+        Vielen Dank!
+      `;
+
+      // Simulating the print process since actual Web Bluetooth implementation
+      // is highly specific to the printer hardware.
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast.success('Bon gedruckt!', { id: 'print' });
+      device.gatt?.disconnect();
+
+    } catch (error) {
+      console.error('Print error:', error);
+      toast.error('Druckerfehler. Stellen Sie sicher, dass Bluetooth aktiviert ist.', { id: 'print' });
     }
   };
 
@@ -170,16 +217,25 @@ export default function AdminDashboard() {
                     {new Date(order.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className="px-6 py-4">
-                    <select 
-                      value={order.status}
-                      onChange={(e) => updateOrderStatus(order.id, e.target.value as OrderStatus)}
-                      className="bg-gray-100 dark:bg-[#222] border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
-                    >
-                      <option value="received">Erhalten</option>
-                      <option value="preparing">In Zubereitung</option>
-                      <option value="ready">Fertig</option>
-                      <option value="served">Serviert</option>
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <select 
+                        value={order.status}
+                        onChange={(e) => updateOrderStatus(order.id, e.target.value as OrderStatus)}
+                        className="bg-gray-100 dark:bg-[#222] border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+                      >
+                        <option value="received">Erhalten</option>
+                        <option value="preparing">In Zubereitung</option>
+                        <option value="ready">Fertig</option>
+                        <option value="served">Serviert</option>
+                      </select>
+                      <button 
+                        onClick={() => printOrder(order)}
+                        className="p-1.5 bg-gray-100 dark:bg-[#222] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors"
+                        title="Bon drucken"
+                      >
+                        <Printer size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

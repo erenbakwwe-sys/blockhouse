@@ -123,11 +123,68 @@ export default function AdminFinance() {
     toast.success('Excel exportiert');
   };
 
+  const exportDATEV = () => {
+    const dateStr = new Date().toLocaleDateString('de-DE');
+    
+    // DATEV Format (simplified CSV for demonstration)
+    // Real DATEV export requires specific header structure and encoding
+    const headers = ["Umsatz", "Soll/Haben", "Konto", "Gegenkonto", "Belegdatum", "Belegfeld 1", "Buchungstext"];
+    
+    const rows = todayOrders.map(o => {
+      const date = new Date(o.createdAt);
+      const formattedDate = `${date.getDate().toString().padStart(2, '0')}${((date.getMonth() + 1).toString().padStart(2, '0'))}`;
+      return [
+        o.total.toFixed(2).replace('.', ','),
+        "H", // Haben (Revenue)
+        "8400", // Erlöse 19% USt
+        "1000", // Kasse
+        formattedDate,
+        `Rechnung-${o.id}`,
+        `Tisch ${o.table} Bestellung`
+      ].join(';');
+    });
+
+    const expensesRows = todayExpenses.map(e => {
+      const date = new Date(e.date);
+      const formattedDate = `${date.getDate().toString().padStart(2, '0')}${((date.getMonth() + 1).toString().padStart(2, '0'))}`;
+      return [
+        e.amount.toFixed(2).replace('.', ','),
+        "S", // Soll (Expense)
+        "4900", // Sonstige betriebliche Aufwendungen
+        "1000", // Kasse
+        formattedDate,
+        `Beleg-${e.id}`,
+        e.description
+      ].join(';');
+    });
+
+    const csvContent = [headers.join(';'), ...rows, ...expensesRows].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `EXTF_DATEV_${dateStr}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('DATEV Export erstellt');
+  };
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Finanzen & Berichte</h1>
         <div className="flex gap-4">
+          <button 
+            onClick={exportDATEV}
+            className="bg-blue-600/20 text-blue-500 hover:bg-blue-600/30 px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2"
+          >
+            <Download size={20} />
+            DATEV Export
+          </button>
           <button 
             onClick={exportPDF}
             className="bg-red-600/20 text-red-500 hover:bg-red-600/30 px-4 py-2 rounded-xl font-medium transition-colors flex items-center gap-2"

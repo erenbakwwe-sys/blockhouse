@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, Bell, Plus, Minus, X, Heart, Clock, Mic, MicOff, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Bell, Plus, Minus, X, Heart, Clock, Mic, MicOff, CheckCircle2, Globe, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useStore } from '../store/StoreContext';
 import { formatCurrency } from '../lib/utils';
@@ -16,6 +16,65 @@ const COMMON_OPTIONS = [
   "Extra Brot"
 ];
 
+const TRANSLATIONS = {
+  de: {
+    menu: 'Menü',
+    favorites: 'Favoriten',
+    callWaiter: 'Kellner rufen',
+    cart: 'Warenkorb',
+    addToCart: 'Hinzufügen',
+    notes: 'Anmerkungen',
+    options: 'Optionen',
+    estimatedTime: 'Tahmini teslimat: 15-20 dk',
+    invalidQR: 'Ungültiger QR-Code. Bitte scannen Sie den Code auf Ihrem Tisch erneut.',
+    voiceCommand: 'Sprachsteuerung',
+    voiceActive: 'Sprachsteuerung aktiv. Sagen Sie "Kellner"',
+    voiceInactive: 'Sprachsteuerung deaktiviert',
+    waiterCalled: 'Kellner wurde gerufen!',
+    addedToCart: 'Zum Warenkorb hinzugefügt',
+    favoritesAdded: 'Zu Favoriten hinzugefügt',
+    favoritesRemoved: 'Aus Favoriten entfernt'
+  },
+  en: {
+    menu: 'Menu',
+    favorites: 'Favorites',
+    callWaiter: 'Call Waiter',
+    cart: 'Cart',
+    addToCart: 'Add to Cart',
+    notes: 'Notes',
+    options: 'Options',
+    estimatedTime: 'Estimated delivery: 15-20 min',
+    invalidQR: 'Invalid QR code. Please scan the code on your table again.',
+    voiceCommand: 'Voice Command',
+    voiceActive: 'Voice command active. Say "Waiter"',
+    voiceInactive: 'Voice command deactivated',
+    waiterCalled: 'Waiter has been called!',
+    addedToCart: 'Added to cart',
+    favoritesAdded: 'Added to favorites',
+    favoritesRemoved: 'Removed from favorites'
+  },
+  tr: {
+    menu: 'Menü',
+    favorites: 'Favoriler',
+    callWaiter: 'Garson Çağır',
+    cart: 'Sepet',
+    addToCart: 'Ekle',
+    notes: 'Notlar',
+    options: 'Seçenekler',
+    estimatedTime: 'Tahmini teslimat: 15-20 dk',
+    invalidQR: 'Geçersiz QR kod. Lütfen masanızdaki kodu tekrar okutun.',
+    voiceCommand: 'Sesli Komut',
+    voiceActive: 'Sesli komut aktif. "Garson" deyin',
+    voiceInactive: 'Sesli komut devre dışı',
+    waiterCalled: 'Garson çağrıldı!',
+    addedToCart: 'Sepete eklendi',
+    favoritesAdded: 'Favorilere eklendi',
+    favoritesRemoved: 'Favorilerden çıkarıldı'
+  }
+};
+
+type Language = 'de' | 'en' | 'tr';
+
 export default function MenuPage() {
   const [searchParams] = useSearchParams();
   const table = searchParams.get('table') || '1';
@@ -24,6 +83,8 @@ export default function MenuPage() {
   
   const { menu, cart, addToCart, removeFromCart, addCall, settings, tables } = useStore();
   const [activeCategory, setActiveCategory] = useState<string>('');
+  const [language, setLanguage] = useState<Language>('de');
+  const t = TRANSLATIONS[language];
   
   // Verify token
   const [isValidTable, setIsValidTable] = useState<boolean | null>(null);
@@ -133,11 +194,11 @@ export default function MenuPage() {
     if (isListening) {
       recognitionRef.current.stop();
       setIsListening(false);
-      toast('Sprachsteuerung deaktiviert', { icon: '🎤' });
+      toast(t.voiceInactive, { icon: '🎤' });
     } else {
       recognitionRef.current.start();
       setIsListening(true);
-      toast.success('Sprachsteuerung aktiv. Sagen Sie "Kellner"');
+      toast.success(t.voiceActive);
     }
   };
 
@@ -147,7 +208,9 @@ export default function MenuPage() {
       prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
     );
     if (!favorites.includes(id)) {
-      toast.success('Zu Favoriten hinzugefügt', { icon: '❤️' });
+      toast.success(t.favoritesAdded, { icon: '❤️' });
+    } else {
+      toast(t.favoritesRemoved, { icon: '💔' });
     }
   };
 
@@ -161,11 +224,11 @@ export default function MenuPage() {
 
   const handleCallWaiter = () => {
     if (!isValidTable) {
-      toast.error('Ungültiger QR-Code. Bitte scannen Sie den Code auf Ihrem Tisch erneut.');
+      toast.error(t.invalidQR);
       return;
     }
     addCall(table);
-    toast.success('Kellner wurde gerufen. Bitte warten Sie einen Moment.');
+    toast.success(t.waiterCalled);
   };
 
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
@@ -175,7 +238,7 @@ export default function MenuPage() {
 
   const openItemModal = (item: MenuItem) => {
     if (!isValidTable) {
-      toast.error('Ungültiger QR-Code. Bitte scannen Sie den Code auf Ihrem Tisch erneut.');
+      toast.error(t.invalidQR);
       return;
     }
     setSelectedItem(item);
@@ -201,7 +264,7 @@ export default function MenuPage() {
       
       setIsAdding(false);
       setSelectedItem(null);
-      toast.success(`${itemQuantity}x ${selectedItem.name} hinzugefügt`);
+      toast.success(t.addedToCart);
     }, 800);
   };
 
@@ -236,11 +299,28 @@ export default function MenuPage() {
     <div className="pb-24">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-gray-50 dark:bg-[#111]/90 backdrop-blur-md border-b border-gray-200 dark:border-white/10 px-4 py-4 flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold text-red-500 tracking-tight">BLOCK HOUSE</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Tisch {table}</p>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => navigate('/')}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-[#222] hover:bg-gray-200 dark:hover:bg-[#333] transition-colors"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-red-500 tracking-tight">BLOCK HOUSE</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Tisch {table}</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as Language)}
+            className="bg-gray-100 dark:bg-[#222] border-none rounded-lg px-2 py-1 text-sm focus:ring-0"
+          >
+            <option value="de">DE</option>
+            <option value="en">EN</option>
+            <option value="tr">TR</option>
+          </select>
           <button
             onClick={toggleListening}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors border ${
@@ -248,7 +328,7 @@ export default function MenuPage() {
                 ? 'bg-red-500 text-white border-red-500 animate-pulse' 
                 : 'bg-gray-100 dark:bg-[#222] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-white/5 hover:bg-gray-200 dark:hover:bg-[#333]'
             }`}
-            title="Sprachsteuerung (Sag 'Kellner')"
+            title={t.voiceCommand}
           >
             {isListening ? <Mic size={20} /> : <MicOff size={20} />}
           </button>
@@ -258,7 +338,7 @@ export default function MenuPage() {
             className="flex items-center gap-2 bg-gray-100 dark:bg-[#222] hover:bg-gray-200 dark:hover:bg-[#333] text-gray-900 dark:text-white px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-200 dark:border-white/5"
           >
             <Bell size={16} className="text-red-500" />
-            Kellner rufen
+            {t.callWaiter}
           </button>
         </div>
       </header>
@@ -267,7 +347,7 @@ export default function MenuPage() {
       {settings?.estimatedPrepTime > 0 && (
         <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-2 flex items-center justify-center gap-2 text-red-400 text-sm font-medium">
           <Clock size={16} />
-          <span>Tahmini teslimat: {settings.estimatedPrepTime}-{settings.estimatedPrepTime + 5} dk</span>
+          <span>{t.estimatedTime}</span>
         </div>
       )}
 
@@ -335,11 +415,11 @@ export default function MenuPage() {
                       <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center">
                         {qtyInCart}
                       </div>
-                      im Warenkorb
+                      {t.cart}
                     </div>
                   ) : (
                     <div className="text-gray-500 text-sm font-medium">
-                      Anpassen & Hinzufügen
+                      {t.addToCart}
                     </div>
                   )}
                   <button 
@@ -397,7 +477,7 @@ export default function MenuPage() {
                 <div className="space-y-6">
                   {/* Options */}
                   <div>
-                    <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3">Optionen (Optional)</h3>
+                    <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3">{t.options}</h3>
                     <div className="flex flex-wrap gap-2">
                       {COMMON_OPTIONS.map(option => (
                         <button
@@ -417,11 +497,11 @@ export default function MenuPage() {
 
                   {/* Notes */}
                   <div>
-                    <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3">Ihre Anmerkung</h3>
+                    <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3">{t.notes}</h3>
                     <textarea
                       value={itemNotes}
                       onChange={(e) => setItemNotes(e.target.value)}
-                      placeholder="Z.B.: Ich habe eine Allergie, bitte beachten Sie..."
+                      placeholder="..."
                       className="w-full bg-gray-100 dark:bg-[#222] border border-gray-200 dark:border-white/10 rounded-xl p-3 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors resize-none h-24"
                     />
                   </div>
@@ -462,12 +542,12 @@ export default function MenuPage() {
                       className="flex items-center gap-2"
                     >
                       <CheckCircle2 size={24} className="animate-bounce" />
-                      Hinzugefügt!
+                      {t.addedToCart}
                     </motion.div>
                   ) : (
                     <>
                       <ShoppingCart size={20} />
-                      {itemQuantity}x Hinzufügen - {formatCurrency(selectedItem.price * itemQuantity)}
+                      {itemQuantity}x {t.addToCart} - {formatCurrency(selectedItem.price * itemQuantity)}
                     </>
                   )}
                 </button>
@@ -492,7 +572,7 @@ export default function MenuPage() {
               <div className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center text-sm">
                 {cartItemCount}
               </div>
-              <span>Warenkorb ansehen</span>
+              <span>{t.cart}</span>
             </div>
             <span>{formatCurrency(cartTotal)}</span>
           </button>

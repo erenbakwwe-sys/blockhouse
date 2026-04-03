@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Search, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, Wand2 } from 'lucide-react';
 import { useStore } from '../store/StoreContext';
 import { formatCurrency } from '../lib/utils';
 import toast from 'react-hot-toast';
 import { MenuItem } from '../types';
+import { GoogleGenAI } from '@google/genai';
 
 export default function AdminMenu() {
   const { menu, addMenuItem, updateMenuItem, deleteMenuItem } = useStore();
@@ -12,6 +13,7 @@ export default function AdminMenu() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -48,6 +50,32 @@ export default function AdminMenu() {
     deleteMenuItem(id);
     setDeleteConfirmId(null);
     toast.success('Gericht erfolgreich gelöscht');
+  };
+
+  const generateDescription = async () => {
+    if (!formData.name) {
+      toast.error('Bitte geben Sie zuerst einen Namen ein.');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Schreibe eine kurze, appetitliche und professionelle Restaurant-Menü-Beschreibung für das Gericht "${formData.name}". Die Beschreibung sollte auf Deutsch sein und maximal 2 Sätze lang sein.`,
+      });
+      
+      if (response.text) {
+        setFormData(prev => ({ ...prev, description: response.text.trim() }));
+        toast.success('Beschreibung generiert!');
+      }
+    } catch (error) {
+      console.error('Error generating description:', error);
+      toast.error('Fehler bei der KI-Generierung.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -211,7 +239,18 @@ export default function AdminMenu() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Beschreibung</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Beschreibung</label>
+                  <button
+                    type="button"
+                    onClick={generateDescription}
+                    disabled={isGenerating || !formData.name}
+                    className="text-xs flex items-center gap-1 text-red-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Wand2 size={12} />
+                    {isGenerating ? 'Generiere...' : 'KI Text'}
+                  </button>
+                </div>
                 <textarea 
                   required
                   rows={3}
