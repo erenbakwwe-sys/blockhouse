@@ -29,6 +29,7 @@ export interface WaiterCall {
 export interface Table {
   id: string;
   number: string;
+  token?: string;
 }
 
 export interface MenuItem {

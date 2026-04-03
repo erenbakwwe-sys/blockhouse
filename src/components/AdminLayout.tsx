@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, QrCode, UtensilsCrossed, Bell, LogOut, History, Lock, LineChart } from 'lucide-react';
+import { LayoutDashboard, QrCode, UtensilsCrossed, Bell, LogOut, History, Lock, LineChart, Menu, X } from 'lucide-react';
 import { useStore } from '../store/StoreContext';
 import React, { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
@@ -21,6 +21,7 @@ export default function AdminLayout() {
 
   const [blinkOrder, setBlinkOrder] = useState(false);
   const [blinkCall, setBlinkCall] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const locationRef = useRef(location.pathname);
   const initialLoadRef = useRef(true);
 
@@ -28,6 +29,7 @@ export default function AdminLayout() {
     locationRef.current = location.pathname;
     if (location.pathname === '/admin') setBlinkOrder(false);
     if (location.pathname === '/admin/calls') setBlinkCall(false);
+    setIsSidebarOpen(false); // Close sidebar on navigation
   }, [location.pathname]);
 
   useEffect(() => {
@@ -214,10 +216,45 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white flex font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white flex flex-col md:flex-row font-sans">
+      {/* Mobile Header */}
+      <div className="md:hidden bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-white/10 p-4 flex items-center justify-between sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 -ml-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+          >
+            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+          <h1 className="text-xl font-bold text-red-500 tracking-tight">Admin Panel</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <NavLink to="/admin/calls" className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+            <Bell size={20} className={blinkCall ? "animate-pulse text-red-400" : ""} />
+            {activeCalls > 0 && (
+              <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {activeCalls}
+              </span>
+            )}
+          </NavLink>
+        </div>
+      </div>
+
+      {/* Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="w-64 bg-white dark:bg-[#1a1a1a] border-r border-gray-200 dark:border-white/10 flex flex-col">
-        <div className="p-6 flex items-center justify-between">
+      <div className={`
+        fixed md:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-[#1a1a1a] border-r border-gray-200 dark:border-white/10 flex flex-col transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="p-6 hidden md:flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-red-500 tracking-tight">Admin Panel</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Restaurant Management</p>
@@ -225,7 +262,7 @@ export default function AdminLayout() {
           <ThemeToggle />
         </div>
         
-        <nav className="flex-1 px-4 space-y-2">
+        <nav className="flex-1 px-4 py-4 md:py-0 space-y-2 overflow-y-auto">
           <NavLink to="/admin" end className={({isActive}) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive ? 'bg-red-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}>
             <LayoutDashboard size={20} className={blinkOrder ? "animate-pulse text-red-400" : ""} />
             <span className="font-medium">Dashboard</span>
@@ -259,7 +296,7 @@ export default function AdminLayout() {
           </NavLink>
         </nav>
         
-        <div className="p-4 border-t border-gray-200 dark:border-white/10">
+        <div className="p-4 border-t border-gray-200 dark:border-white/10 mt-auto">
           <button 
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-white/5 hover:text-gray-900 dark:text-white transition-colors"
@@ -271,7 +308,7 @@ export default function AdminLayout() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto w-full">
         <Outlet />
       </div>
     </div>

@@ -13,6 +13,7 @@ interface StoreState {
   expenses: Expense[];
   settings: GlobalSettings;
   cart: OrderItem[];
+  addTable: (table: Omit<Table, 'id'>) => void;
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   addCall: (table: string) => void;
@@ -109,6 +110,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       unsubSettings();
     };
   }, []);
+
+  const addTable = async (tableData: Omit<Table, 'id'>) => {
+    if (!isAuthReady) return;
+    const newTable: Table = {
+      ...tableData,
+      id: Math.random().toString(36).substring(2, 9),
+    };
+    try {
+      await setDoc(doc(collection(db, 'tables'), newTable.id), newTable);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const addOrder = async (orderData: Omit<Order, 'id' | 'createdAt'>) => {
     if (!isAuthReady) return;
@@ -277,7 +291,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   return (
     <StoreContext.Provider value={{ 
       orders, calls, tables, menu, expenses, settings, cart, 
-      addOrder, updateOrderStatus, addCall, resolveCall, 
+      addTable, addOrder, updateOrderStatus, addCall, resolveCall, 
       addToCart, removeFromCart, clearCart, 
       addMenuItem, updateMenuItem, deleteMenuItem, clearHistory,
       addExpense, deleteExpense, updateSettings

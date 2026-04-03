@@ -19,11 +19,31 @@ const COMMON_OPTIONS = [
 export default function MenuPage() {
   const [searchParams] = useSearchParams();
   const table = searchParams.get('table') || '1';
+  const token = searchParams.get('token');
   const navigate = useNavigate();
   
-  const { menu, cart, addToCart, removeFromCart, addCall, settings } = useStore();
+  const { menu, cart, addToCart, removeFromCart, addCall, settings, tables } = useStore();
   const [activeCategory, setActiveCategory] = useState<string>('');
   
+  // Verify token
+  const [isValidTable, setIsValidTable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (tables.length > 0) {
+      const tableData = tables.find(t => t.number === table);
+      if (tableData) {
+        // If the table has a token, it must match. If it doesn't have a token, it's valid (for backwards compatibility)
+        if (tableData.token) {
+          setIsValidTable(tableData.token === token);
+        } else {
+          setIsValidTable(true);
+        }
+      } else {
+        setIsValidTable(false);
+      }
+    }
+  }, [tables, table, token]);
+
   // Modal state
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [itemNotes, setItemNotes] = useState('');
@@ -140,6 +160,10 @@ export default function MenuPage() {
   }, [categories, activeCategory]);
 
   const handleCallWaiter = () => {
+    if (!isValidTable) {
+      toast.error('Ungültiger QR-Code. Bitte scannen Sie den Code auf Ihrem Tisch erneut.');
+      return;
+    }
     addCall(table);
     toast.success('Kellner wurde gerufen. Bitte warten Sie einen Moment.');
   };
@@ -150,6 +174,10 @@ export default function MenuPage() {
   const filteredMenu = menu.filter(item => item.category === activeCategory);
 
   const openItemModal = (item: MenuItem) => {
+    if (!isValidTable) {
+      toast.error('Ungültiger QR-Code. Bitte scannen Sie den Code auf Ihrem Tisch erneut.');
+      return;
+    }
     setSelectedItem(item);
     setItemNotes('');
     setItemOptions([]);
@@ -188,6 +216,22 @@ export default function MenuPage() {
     return cart.filter(item => item.menuItemId === menuItemId).reduce((sum, item) => sum + item.quantity, 0);
   };
 
+  if (isValidTable === false) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-[#111] flex flex-col items-center justify-center p-4 text-center">
+        <div className="bg-white dark:bg-[#1a1a1a] p-8 rounded-3xl shadow-xl max-w-md w-full border border-gray-100 dark:border-white/5">
+          <div className="w-20 h-20 bg-red-100 dark:bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <X size={40} />
+          </div>
+          <h1 className="text-2xl font-bold mb-4">Ungültiger QR-Code</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">
+            Bitte scannen Sie den QR-Code auf Ihrem Tisch erneut, um auf die Speisekarte zuzugreifen und Bestellungen aufzugeben.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pb-24">
       {/* Header */}
@@ -223,7 +267,7 @@ export default function MenuPage() {
       {settings?.estimatedPrepTime > 0 && (
         <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-2 flex items-center justify-center gap-2 text-red-400 text-sm font-medium">
           <Clock size={16} />
-          <span>Geschätzte Zeit: {settings.estimatedPrepTime}-{settings.estimatedPrepTime + 5} Min.</span>
+          <span>Tahmini teslimat: {settings.estimatedPrepTime}-{settings.estimatedPrepTime + 5} dk</span>
         </div>
       )}
 
