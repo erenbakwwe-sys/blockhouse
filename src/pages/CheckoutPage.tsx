@@ -1,22 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, CreditCard, Banknote, Trash2, Plus, Minus } from 'lucide-react';
+import { ArrowLeft, CreditCard, Banknote, Trash2, Plus, Minus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useStore } from '../store/StoreContext';
 import { formatCurrency } from '../lib/utils';
 import { OrderItem } from '../types';
 import ThemeToggle from '../components/ThemeToggle';
+import { TRANSLATIONS } from '../lib/translations';
 
 export default function CheckoutPage() {
   const [searchParams] = useSearchParams();
   const table = searchParams.get('table') || '1';
+  const token = searchParams.get('token');
   const navigate = useNavigate();
-  const { menu, cart, addToCart, removeFromCart, clearCart, addOrder } = useStore();
+  const { menu, cart, addToCart, removeFromCart, clearCart, addOrder, language, tables } = useStore();
+  const t = TRANSLATIONS[language];
   
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tipPercentage, setTipPercentage] = useState<number>(0);
+
+  // Verify token
+  const [isValidTable, setIsValidTable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (tables.length > 0) {
+      const tableData = tables.find(t => t.number === table);
+      if (tableData) {
+        if (tableData.token) {
+          setIsValidTable(tableData.token === token);
+        } else {
+          setIsValidTable(true);
+        }
+      } else {
+        setIsValidTable(false);
+      }
+    }
+  }, [tables, table, token]);
 
   const cartItems = cart;
   const subTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
@@ -31,7 +52,7 @@ export default function CheckoutPage() {
 
   const handleCheckout = () => {
     if (cartItems.length === 0) {
-      toast.error('Ihr Warenkorb ist leer.');
+      toast.error(t.emptyCart);
       return;
     }
 
@@ -49,10 +70,26 @@ export default function CheckoutPage() {
       addOrder(newOrder);
       clearCart();
       setIsSubmitting(false);
-      toast.success('Bestellung erfolgreich aufgegeben!');
+      toast.success(t.orderSuccess);
       navigate(`/order-status?table=${table}`);
     }, 1500);
   };
+
+  if (isValidTable === false) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-[#111] flex flex-col items-center justify-center p-4 text-center">
+        <div className="bg-white dark:bg-[#1a1a1a] p-8 rounded-3xl shadow-xl max-w-md w-full border border-gray-100 dark:border-white/5">
+          <div className="w-20 h-20 bg-red-100 dark:bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <X size={40} />
+          </div>
+          <h1 className="text-2xl font-bold mb-4">{t.invalidQR.split('.')[0]}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">
+            {t.invalidQR}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -60,13 +97,13 @@ export default function CheckoutPage() {
         <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
           <Trash2 className="w-8 h-8 text-red-500" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Warenkorb ist leer</h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-8 text-center">Bitte fügen Sie Gerichte aus dem Menü hinzu.</p>
+        <h2 className="text-2xl font-bold mb-2">{t.emptyCart}</h2>
+        <p className="text-gray-500 dark:text-gray-400 mb-8 text-center">{t.emptyCartDesc}</p>
         <button 
           onClick={() => navigate(`/menu?table=${table}`)}
           className="bg-red-600 text-white px-8 py-3 rounded-full font-bold hover:bg-red-700 transition-colors"
         >
-          Zurück zum Menü
+          {t.backToMenu}
         </button>
       </div>
     );
@@ -84,7 +121,7 @@ export default function CheckoutPage() {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Kasse</h1>
+            <h1 className="text-xl font-bold tracking-tight">{t.checkout}</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">Tisch {table}</p>
           </div>
         </div>
@@ -94,7 +131,7 @@ export default function CheckoutPage() {
       <main className="p-4 max-w-2xl mx-auto space-y-8">
         {/* Order Items */}
         <section>
-          <h2 className="text-lg font-bold mb-4 text-gray-300">Ihre Bestellung</h2>
+          <h2 className="text-lg font-bold mb-4 text-gray-300">{t.yourOrder}</h2>
           <div className="space-y-4">
             {cartItems.map((item) => (
               <div key={item.id} className="flex flex-col gap-3 bg-white dark:bg-[#1a1a1a] p-4 rounded-2xl border border-gray-100 dark:border-white/5">
@@ -146,7 +183,7 @@ export default function CheckoutPage() {
         {upsellItem && (
           <section className="bg-red-500/5 border border-red-500/20 rounded-2xl p-4">
             <h2 className="text-sm font-bold text-red-500 mb-3 flex items-center gap-2">
-              <span>✨</span> Dazu empfehlen wir
+              <span>✨</span> {t.weRecommend}
             </h2>
             <div className="flex items-center gap-4">
               <img src={upsellItem.image} alt={upsellItem.name} className="w-16 h-16 rounded-xl object-cover" />
@@ -165,7 +202,7 @@ export default function CheckoutPage() {
                 })}
                 className="bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-700 transition-colors"
               >
-                Hinzufügen
+                {t.addToCart}
               </button>
             </div>
           </section>
@@ -173,7 +210,7 @@ export default function CheckoutPage() {
 
         {/* Tip Section */}
         <section>
-          <h2 className="text-lg font-bold mb-4 text-gray-300">Trinkgeld für das Team</h2>
+          <h2 className="text-lg font-bold mb-4 text-gray-300">{t.tip}</h2>
           <div className="flex gap-2">
             {[0, 0.1, 0.15, 0.2].map((percentage) => (
               <button
@@ -185,7 +222,7 @@ export default function CheckoutPage() {
                     : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#222]'
                 }`}
               >
-                {percentage === 0 ? 'Keins' : `${percentage * 100}%`}
+                {percentage === 0 ? t.noTip : `${percentage * 100}%`}
               </button>
             ))}
           </div>
@@ -193,7 +230,7 @@ export default function CheckoutPage() {
 
         {/* Payment Method */}
         <section>
-          <h2 className="text-lg font-bold mb-4 text-gray-300">Zahlungsmethode</h2>
+          <h2 className="text-lg font-bold mb-4 text-gray-300">{t.paymentMethod}</h2>
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => setPaymentMethod('card')}
@@ -204,7 +241,7 @@ export default function CheckoutPage() {
               }`}
             >
               <CreditCard size={24} className={paymentMethod === 'card' ? 'text-red-500' : ''} />
-              <span className="font-medium">Karte</span>
+              <span className="font-medium">{t.card}</span>
             </button>
             <button
               onClick={() => setPaymentMethod('cash')}
@@ -215,7 +252,7 @@ export default function CheckoutPage() {
               }`}
             >
               <Banknote size={24} className={paymentMethod === 'cash' ? 'text-red-500' : ''} />
-              <span className="font-medium">Bar beim Kellner</span>
+              <span className="font-medium">{t.cash}</span>
             </button>
           </div>
 
@@ -250,12 +287,12 @@ export default function CheckoutPage() {
         {/* Summary */}
         <section className="bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl border border-gray-100 dark:border-white/5">
           <div className="flex justify-between mb-2 text-gray-500 dark:text-gray-400">
-            <span>Zwischensumme</span>
+            <span>{t.subtotal}</span>
             <span>{formatCurrency(subTotal)}</span>
           </div>
           {tipAmount > 0 && (
             <div className="flex justify-between mb-2 text-gray-500 dark:text-gray-400">
-              <span>Trinkgeld</span>
+              <span>{t.tip}</span>
               <span>{formatCurrency(tipAmount)}</span>
             </div>
           )}
@@ -264,7 +301,7 @@ export default function CheckoutPage() {
             <span>Inklusive</span>
           </div>
           <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-white/10">
-            <span className="text-lg font-bold">Gesamtsumme</span>
+            <span className="text-lg font-bold">{t.total}</span>
             <span className="text-2xl font-bold text-red-500">{formatCurrency(cartTotal)}</span>
           </div>
         </section>
@@ -281,7 +318,7 @@ export default function CheckoutPage() {
             <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
             <>
-              <span>Jetzt kostenpflichtig bestellen</span>
+              <span>{t.orderNow}</span>
               <span>•</span>
               <span>{formatCurrency(cartTotal)}</span>
             </>

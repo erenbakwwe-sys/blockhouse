@@ -2,8 +2,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Order, WaiterCall, Table, MenuItem, Expense, GlobalSettings, OrderItem } from '../types';
 import { initialMenu, initialTables } from '../data/menu';
 import { db, auth } from '../firebase';
-import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, getDocs, writeBatch, query, orderBy } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, getDocs, writeBatch, query, orderBy, limit } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
+import { Language } from '../lib/translations';
 
 interface StoreState {
   orders: Order[];
@@ -13,6 +14,8 @@ interface StoreState {
   expenses: Expense[];
   settings: GlobalSettings;
   cart: OrderItem[];
+  language: Language;
+  setLanguage: (lang: Language) => void;
   addTable: (table: Omit<Table, 'id'>) => void;
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
@@ -39,6 +42,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [settings, setSettings] = useState<GlobalSettings>({ estimatedPrepTime: 15 });
+  const [language, setLanguage] = useState<Language>(() => {
+    return (localStorage.getItem('language') as Language) || 'de';
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
+
   const [cart, setCart] = useState<OrderItem[]>(() => {
     try {
       const saved = localStorage.getItem('cart_v2');
@@ -81,11 +92,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
     }, console.error);
 
-    const unsubOrders = onSnapshot(query(collection(db, 'orders'), orderBy('createdAt', 'desc')), (snapshot) => {
+    const unsubOrders = onSnapshot(query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(500)), (snapshot) => {
       setOrders(snapshot.docs.map(doc => doc.data() as Order));
     }, console.error);
 
-    const unsubCalls = onSnapshot(query(collection(db, 'calls'), orderBy('createdAt', 'desc')), (snapshot) => {
+    const unsubCalls = onSnapshot(query(collection(db, 'calls'), orderBy('createdAt', 'desc'), limit(500)), (snapshot) => {
       setCalls(snapshot.docs.map(doc => doc.data() as WaiterCall));
     }, console.error);
 
@@ -290,7 +301,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreContext.Provider value={{ 
-      orders, calls, tables, menu, expenses, settings, cart, 
+      orders, calls, tables, menu, expenses, settings, cart, language, setLanguage,
       addTable, addOrder, updateOrderStatus, addCall, resolveCall, 
       addToCart, removeFromCart, clearCart, 
       addMenuItem, updateMenuItem, deleteMenuItem, clearHistory,

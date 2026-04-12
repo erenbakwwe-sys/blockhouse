@@ -7,6 +7,7 @@ import { useStore } from '../store/StoreContext';
 import { formatCurrency } from '../lib/utils';
 import { MenuItem } from '../types';
 import ThemeToggle from '../components/ThemeToggle';
+import { TRANSLATIONS, Language } from '../lib/translations';
 
 const COMMON_OPTIONS = [
   "Ohne Zwiebeln",
@@ -16,74 +17,14 @@ const COMMON_OPTIONS = [
   "Extra Brot"
 ];
 
-const TRANSLATIONS = {
-  de: {
-    menu: 'Menü',
-    favorites: 'Favoriten',
-    callWaiter: 'Kellner rufen',
-    cart: 'Warenkorb',
-    addToCart: 'Hinzufügen',
-    notes: 'Anmerkungen',
-    options: 'Optionen',
-    estimatedTime: 'Tahmini teslimat: 15-20 dk',
-    invalidQR: 'Ungültiger QR-Code. Bitte scannen Sie den Code auf Ihrem Tisch erneut.',
-    voiceCommand: 'Sprachsteuerung',
-    voiceActive: 'Sprachsteuerung aktiv. Sagen Sie "Kellner"',
-    voiceInactive: 'Sprachsteuerung deaktiviert',
-    waiterCalled: 'Kellner wurde gerufen!',
-    addedToCart: 'Zum Warenkorb hinzugefügt',
-    favoritesAdded: 'Zu Favoriten hinzugefügt',
-    favoritesRemoved: 'Aus Favoriten entfernt'
-  },
-  en: {
-    menu: 'Menu',
-    favorites: 'Favorites',
-    callWaiter: 'Call Waiter',
-    cart: 'Cart',
-    addToCart: 'Add to Cart',
-    notes: 'Notes',
-    options: 'Options',
-    estimatedTime: 'Estimated delivery: 15-20 min',
-    invalidQR: 'Invalid QR code. Please scan the code on your table again.',
-    voiceCommand: 'Voice Command',
-    voiceActive: 'Voice command active. Say "Waiter"',
-    voiceInactive: 'Voice command deactivated',
-    waiterCalled: 'Waiter has been called!',
-    addedToCart: 'Added to cart',
-    favoritesAdded: 'Added to favorites',
-    favoritesRemoved: 'Removed from favorites'
-  },
-  tr: {
-    menu: 'Menü',
-    favorites: 'Favoriler',
-    callWaiter: 'Garson Çağır',
-    cart: 'Sepet',
-    addToCart: 'Ekle',
-    notes: 'Notlar',
-    options: 'Seçenekler',
-    estimatedTime: 'Tahmini teslimat: 15-20 dk',
-    invalidQR: 'Geçersiz QR kod. Lütfen masanızdaki kodu tekrar okutun.',
-    voiceCommand: 'Sesli Komut',
-    voiceActive: 'Sesli komut aktif. "Garson" deyin',
-    voiceInactive: 'Sesli komut devre dışı',
-    waiterCalled: 'Garson çağrıldı!',
-    addedToCart: 'Sepete eklendi',
-    favoritesAdded: 'Favorilere eklendi',
-    favoritesRemoved: 'Favorilerden çıkarıldı'
-  }
-};
-
-type Language = 'de' | 'en' | 'tr';
-
 export default function MenuPage() {
   const [searchParams] = useSearchParams();
   const table = searchParams.get('table') || '1';
   const token = searchParams.get('token');
   const navigate = useNavigate();
   
-  const { menu, cart, addToCart, removeFromCart, addCall, settings, tables } = useStore();
+  const { menu, cart, addToCart, removeFromCart, addCall, settings, tables, language, setLanguage } = useStore();
   const [activeCategory, setActiveCategory] = useState<string>('');
-  const [language, setLanguage] = useState<Language>('de');
   const t = TRANSLATIONS[language];
   
   // Verify token
@@ -286,9 +227,9 @@ export default function MenuPage() {
           <div className="w-20 h-20 bg-red-100 dark:bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <X size={40} />
           </div>
-          <h1 className="text-2xl font-bold mb-4">Ungültiger QR-Code</h1>
+          <h1 className="text-2xl font-bold mb-4">{t.invalidQR.split('.')[0]}</h1>
           <p className="text-gray-500 dark:text-gray-400 mb-8">
-            Bitte scannen Sie den QR-Code auf Ihrem Tisch erneut, um auf die Speisekarte zuzugreifen und Bestellungen aufzugeben.
+            {t.invalidQR}
           </p>
         </div>
       </div>
@@ -323,14 +264,15 @@ export default function MenuPage() {
           </select>
           <button
             onClick={toggleListening}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors border ${
+            className={`h-10 px-3 rounded-full flex items-center justify-center gap-2 transition-colors border ${
               isListening 
-                ? 'bg-red-500 text-white border-red-500 animate-pulse' 
+                ? 'bg-red-500 text-white border-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]' 
                 : 'bg-gray-100 dark:bg-[#222] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-white/5 hover:bg-gray-200 dark:hover:bg-[#333]'
             }`}
             title={t.voiceCommand}
           >
-            {isListening ? <Mic size={20} /> : <MicOff size={20} />}
+            {isListening ? <Mic size={18} /> : <MicOff size={18} />}
+            <span className="text-xs font-medium hidden sm:block">{t.voiceCommandHint}</span>
           </button>
           <ThemeToggle />
           <button 
@@ -345,10 +287,14 @@ export default function MenuPage() {
 
       {/* Estimated Time Banner */}
       {settings?.estimatedPrepTime > 0 && (
-        <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-2 flex items-center justify-center gap-2 text-red-400 text-sm font-medium">
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-500/10 border-b border-red-500/20 px-4 py-2 flex items-center justify-center gap-2 text-red-400 text-sm font-medium"
+        >
           <Clock size={16} />
-          <span>{t.estimatedTime}</span>
-        </div>
+          <span>{t.estimatedTime(settings.estimatedPrepTime, settings.estimatedPrepTime + 5)}</span>
+        </motion.div>
       )}
 
       {/* Categories */}
@@ -415,11 +361,11 @@ export default function MenuPage() {
                       <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center">
                         {qtyInCart}
                       </div>
-                      {t.cart}
+                      {t.inCart}
                     </div>
                   ) : (
                     <div className="text-gray-500 text-sm font-medium">
-                      {t.addToCart}
+                      {t.customizeAndAdd}
                     </div>
                   )}
                   <button 
@@ -489,7 +435,7 @@ export default function MenuPage() {
                               : 'bg-gray-100 dark:bg-[#222] border-gray-100 dark:border-white/5 text-gray-500 dark:text-gray-400 hover:bg-[#333]'
                           }`}
                         >
-                          {option}
+                          {t.commonOptions[option as keyof typeof t.commonOptions] || option}
                         </button>
                       ))}
                     </div>
@@ -501,7 +447,7 @@ export default function MenuPage() {
                     <textarea
                       value={itemNotes}
                       onChange={(e) => setItemNotes(e.target.value)}
-                      placeholder="..."
+                      placeholder={t.notesPlaceholder}
                       className="w-full bg-gray-100 dark:bg-[#222] border border-gray-200 dark:border-white/10 rounded-xl p-3 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors resize-none h-24"
                     />
                   </div>
@@ -572,7 +518,7 @@ export default function MenuPage() {
               <div className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center text-sm">
                 {cartItemCount}
               </div>
-              <span>{t.cart}</span>
+              <span>{t.viewCart}</span>
             </div>
             <span>{formatCurrency(cartTotal)}</span>
           </button>

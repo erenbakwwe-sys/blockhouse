@@ -57,7 +57,7 @@ export default function AdminDashboard() {
       // Note: Web Bluetooth API is experimental and requires HTTPS.
       // Many thermal printers use custom UUIDs or standard serial UUIDs.
       // This is a simplified example.
-      const device = await navigator.bluetooth.requestDevice({
+      const device = await (navigator as any).bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'] // Example UUID, often used by generic printers
       });
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
 
       {/* Stats Cards */}

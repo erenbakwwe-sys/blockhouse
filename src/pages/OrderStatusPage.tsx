@@ -6,34 +6,71 @@ import { useStore } from '../store/StoreContext';
 import { formatCurrency } from '../lib/utils';
 import { OrderStatus } from '../types';
 import ThemeToggle from '../components/ThemeToggle';
-
-const STATUS_STEPS: { status: OrderStatus; label: string; icon: React.ElementType }[] = [
-  { status: 'received', label: 'Erhalten', icon: CheckCircle2 },
-  { status: 'preparing', label: 'In Zubereitung', icon: ChefHat },
-  { status: 'ready', label: 'Fertig', icon: BellRing },
-  { status: 'served', label: 'Serviert', icon: Utensils },
-];
+import { TRANSLATIONS } from '../lib/translations';
 
 export default function OrderStatusPage() {
   const [searchParams] = useSearchParams();
   const table = searchParams.get('table') || '1';
+  const token = searchParams.get('token');
   const navigate = useNavigate();
-  const { orders } = useStore();
+  const { orders, language, tables } = useStore();
+  const t = TRANSLATIONS[language];
+
+  // Verify token
+  const [isValidTable, setIsValidTable] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    if (tables.length > 0) {
+      const tableData = tables.find(t => t.number === table);
+      if (tableData) {
+        if (tableData.token) {
+          setIsValidTable(tableData.token === token);
+        } else {
+          setIsValidTable(true);
+        }
+      } else {
+        setIsValidTable(false);
+      }
+    }
+  }, [tables, table, token]);
+
+  const STATUS_STEPS: { status: OrderStatus; label: string; icon: React.ElementType }[] = [
+    { status: 'received', label: t.statusReceived, icon: CheckCircle2 },
+    { status: 'preparing', label: t.statusPreparing, icon: ChefHat },
+    { status: 'ready', label: t.statusReady, icon: BellRing },
+    { status: 'served', label: t.statusServed, icon: Utensils },
+  ];
 
   // Get the most recent order for this table
   const tableOrders = orders.filter(o => o.table === table).sort((a, b) => b.createdAt - a.createdAt);
   const currentOrder = tableOrders[0];
 
+  if (isValidTable === false) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-[#111] flex flex-col items-center justify-center p-4 text-center">
+        <div className="bg-white dark:bg-[#1a1a1a] p-8 rounded-3xl shadow-xl max-w-md w-full border border-gray-100 dark:border-white/5">
+          <div className="w-20 h-20 bg-red-100 dark:bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-4xl">❌</span>
+          </div>
+          <h1 className="text-2xl font-bold mb-4">{t.invalidQR.split('.')[0]}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">
+            {t.invalidQR}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!currentOrder) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <h2 className="text-2xl font-bold mb-2">Keine aktive Bestellung</h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-8 text-center">Sie haben noch keine Bestellung aufgegeben.</p>
+        <h2 className="text-2xl font-bold mb-2">{t.noActiveOrder}</h2>
+        <p className="text-gray-500 dark:text-gray-400 mb-8 text-center">{t.noActiveOrderDesc}</p>
         <button 
           onClick={() => navigate(`/menu?table=${table}`)}
           className="bg-red-600 text-white px-8 py-3 rounded-full font-bold hover:bg-red-700 transition-colors"
         >
-          Zum Menü
+          {t.backToMenu}
         </button>
       </div>
     );
@@ -53,7 +90,7 @@ export default function OrderStatusPage() {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Bestellstatus</h1>
+            <h1 className="text-xl font-bold tracking-tight">{t.orderStatus}</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">Tisch {table} • #{currentOrder.id}</p>
           </div>
         </div>
@@ -96,10 +133,10 @@ export default function OrderStatusPage() {
                           animate={{ opacity: 1, height: 'auto' }}
                           className="text-sm text-red-500 mt-1"
                         >
-                          {step.status === 'received' && 'Ihre Bestellung ist in der Küche eingegangen.'}
-                          {step.status === 'preparing' && 'Unsere Köche bereiten Ihr Essen frisch zu.'}
-                          {step.status === 'ready' && 'Ihr Essen ist fertig und wird gleich serviert.'}
-                          {step.status === 'served' && 'Guten Appetit!'}
+                          {step.status === 'received' && t.statusReceivedDesc}
+                          {step.status === 'preparing' && t.statusPreparingDesc}
+                          {step.status === 'ready' && t.statusReadyDesc}
+                          {step.status === 'served' && t.statusServedDesc}
                         </motion.p>
                       )}
                     </div>
@@ -112,7 +149,7 @@ export default function OrderStatusPage() {
 
         {/* Order Details */}
         <section className="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-white/5">
-          <h2 className="text-lg font-bold mb-4 text-gray-300">Bestelldetails</h2>
+          <h2 className="text-lg font-bold mb-4 text-gray-300">{t.orderDetails}</h2>
           <div className="space-y-4 mb-6">
             {currentOrder.items.map((item, idx) => (
               <div key={idx} className="flex justify-between items-center border-b border-gray-100 dark:border-white/5 pb-4 last:border-0 last:pb-0">
@@ -128,7 +165,7 @@ export default function OrderStatusPage() {
           </div>
           
           <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-white/10">
-            <span className="text-lg font-bold">Gesamtsumme</span>
+            <span className="text-lg font-bold">{t.total}</span>
             <span className="text-2xl font-bold text-red-500">{formatCurrency(currentOrder.total)}</span>
           </div>
         </section>
