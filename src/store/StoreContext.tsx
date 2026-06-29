@@ -17,6 +17,7 @@ interface StoreState {
   language: Language;
   setLanguage: (lang: Language) => void;
   addTable: (table: Omit<Table, 'id'>) => void;
+  updateTableStatus: (tableId: string, status: Table['status']) => void;
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   addCall: (table: string) => void;
@@ -127,9 +128,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const newTable: Table = {
       ...tableData,
       id: Math.random().toString(36).substring(2, 9),
+      status: 'available',
     };
     try {
       await setDoc(doc(collection(db, 'tables'), newTable.id), newTable);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const updateTableStatus = async (tableId: string, status: Table['status']) => {
+    if (!isAuthReady) return;
+    try {
+      await updateDoc(doc(db, 'tables', tableId), { status });
     } catch (e) {
       console.error(e);
     }
@@ -302,7 +313,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   return (
     <StoreContext.Provider value={{ 
       orders, calls, tables, menu, expenses, settings, cart, language, setLanguage,
-      addTable, addOrder, updateOrderStatus, addCall, resolveCall, 
+      addTable, updateTableStatus, addOrder, updateOrderStatus, addCall, resolveCall, 
       addToCart, removeFromCart, clearCart, 
       addMenuItem, updateMenuItem, deleteMenuItem, clearHistory,
       addExpense, deleteExpense, updateSettings

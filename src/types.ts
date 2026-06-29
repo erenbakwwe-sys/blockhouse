@@ -17,6 +17,8 @@ export interface Order {
   total: number;
   status: OrderStatus;
   createdAt: number;
+  paymentMethod?: 'card' | 'cash' | 'pos';
+  paymentType?: 'card' | 'cash' | 'pos' | 'split';
 }
 
 export interface WaiterCall {
@@ -30,6 +32,7 @@ export interface Table {
   id: string;
   number: string;
   token?: string;
+  status?: 'available' | 'occupied' | 'reserved';
 }
 
 export interface MenuItem {

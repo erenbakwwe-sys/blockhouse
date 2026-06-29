@@ -3,6 +3,8 @@ import { formatCurrency } from '../lib/utils';
 import { DollarSign, ShoppingBag, Clock, Users, TrendingUp, Award, Printer } from 'lucide-react';
 import { OrderStatus, Order } from '../types';
 import toast from 'react-hot-toast';
+import { printThermalReceipt } from '../lib/printReceipt';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AdminDashboard() {
   const { orders, calls, updateOrderStatus } = useStore();
@@ -11,6 +13,39 @@ export default function AdminDashboard() {
   const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
   const pendingOrders = orders.filter(o => o.status !== 'served').length;
   const activeCalls = calls.filter(c => c.status === 'active').length;
+
+  // Calculate last 7 days data
+  const last7DaysData = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dayName = d.toLocaleDateString('de-DE', { weekday: 'short' });
+    const dateStr = d.toDateString();
+    
+    // Filter orders by date string
+    const dayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === dateStr);
+    const revenue = dayOrders.reduce((sum, o) => sum + o.total, 0);
+    const count = dayOrders.length;
+    
+    return {
+      name: dayName,
+      revenue: parseFloat(revenue.toFixed(2)),
+      count: count
+    };
+  });
+
+  // Custom Tooltip for Recharts area chart
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-gray-900/95 dark:bg-black/95 text-white p-3.5 rounded-xl border border-white/10 shadow-xl backdrop-blur-md text-xs">
+          <p className="font-bold mb-1 text-gray-300">{payload[0].payload.name}</p>
+          <p className="text-emerald-400 font-bold mb-0.5">Umsatz: {formatCurrency(payload[0].value)}</p>
+          <p className="text-gray-400 font-medium">Bestellungen: {payload[0].payload.count}</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   // Calculate top selling products
   const productSales: Record<string, { name: string; count: number; revenue: number }> = {};
@@ -51,49 +86,27 @@ export default function AdminDashboard() {
     }
   };
 
-  const printOrder = async (order: Order) => {
+  const printOrder = (order: Order) => {
     try {
-      // Request a Bluetooth device that supports the Serial Port Profile (SPP)
-      // Note: Web Bluetooth API is experimental and requires HTTPS.
-      // Many thermal printers use custom UUIDs or standard serial UUIDs.
-      // This is a simplified example.
-      const device = await (navigator as any).bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'] // Example UUID, often used by generic printers
+      printThermalReceipt({
+        id: order.id,
+        table: order.table,
+        createdAt: order.createdAt,
+        items: order.items.map(i => ({
+          name: i.name,
+          quantity: i.quantity,
+          price: i.price,
+          options: i.options,
+          notes: i.notes
+        })),
+        subtotal: order.total, // Order records total directly
+        total: order.total,
+        paymentMethod: order.paymentMethod || order.paymentType
       });
-
-      toast.loading('Verbinde mit Drucker...', { id: 'print' });
-      const server = await device.gatt?.connect();
-      
-      if (!server) throw new Error('Konnte nicht verbinden');
-
-      // In a real scenario, you'd need to find the specific service and characteristic
-      // for writing data to the printer. This varies heavily by printer model.
-      // The following is a placeholder for the actual ESC/POS commands.
-      
-      const escPosData = `
-        RESTAU APP
-        ------------------------
-        Tisch: ${order.table}
-        Zeit: ${new Date(order.createdAt).toLocaleTimeString('de-DE')}
-        ------------------------
-        ${order.items.map(i => `${i.quantity}x ${i.name} - ${formatCurrency(i.price * i.quantity)}`).join('\n')}
-        ------------------------
-        Gesamt: ${formatCurrency(order.total)}
-        
-        Vielen Dank!
-      `;
-
-      // Simulating the print process since actual Web Bluetooth implementation
-      // is highly specific to the printer hardware.
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast.success('Bon gedruckt!', { id: 'print' });
-      device.gatt?.disconnect();
-
+      toast.success('Druckerdialog geöffnet!');
     } catch (error) {
       console.error('Print error:', error);
-      toast.error('Druckerfehler. Stellen Sie sicher, dass Bluetooth aktiviert ist.', { id: 'print' });
+      toast.error('Fehler beim Öffnen des Druckerdialogs.');
     }
   };
 
@@ -151,8 +164,70 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        {/* Visual Analytics */}
+        <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 p-6 lg:col-span-2 flex flex-col justify-between shadow-sm">
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                  <TrendingUp className="text-indigo-500" size={20} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Umsatz-Analyse</h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Umsatzverlauf der letzten 7 Tage</p>
+                </div>
+              </div>
+              <div className="text-left sm:text-right">
+                <span className="text-xs font-semibold text-gray-400 block">Gesamt (7 Tage)</span>
+                <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                  {formatCurrency(last7DaysData.reduce((sum, d) => sum + d.revenue, 0))}
+                </span>
+              </div>
+            </div>
+            
+            {/* Chart */}
+            <div className="h-64 w-full mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={last7DaysData}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis 
+                    dataKey="name" 
+                    tickLine={false} 
+                    axisLine={false}
+                    tick={{ fill: '#888888', fontSize: 11, fontWeight: 500 }}
+                  />
+                  <YAxis 
+                    tickLine={false} 
+                    axisLine={false}
+                    tick={{ fill: '#888888', fontSize: 11, fontWeight: 500 }}
+                    tickFormatter={(val) => `${val}€`}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="#4f46e5" 
+                    strokeWidth={2}
+                    fillOpacity={1} 
+                    fill="url(#colorRevenue)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
         {/* Top Products Widget */}
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 p-6 lg:col-span-1">
+        <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 p-6 lg:col-span-1 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
               <TrendingUp className="text-orange-500" size={20} />
@@ -182,9 +257,10 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
+      </div>
 
-        {/* Recent Orders Table */}
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden lg:col-span-2">
+      {/* Recent Orders Table */}
+      <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden w-full mb-8 shadow-sm">
         <div className="p-6 border-b border-gray-100 dark:border-white/5">
           <h2 className="text-xl font-bold">Letzte Bestellungen</h2>
         </div>
@@ -249,7 +325,6 @@ export default function AdminDashboard() {
             </tbody>
           </table>
         </div>
-      </div>
       </div>
     </div>
   );

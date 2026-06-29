@@ -9,7 +9,7 @@ export default function LandingPage() {
   const opacity1 = useTransform(scrollY, [0, 500], [0.4, 0]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white font-sans selection:bg-red-500/30">
+    <div className="min-h-screen bg-[#f2f2f7] dark:bg-black text-[#1c1c1e] dark:text-white font-sans selection:bg-red-500/20 antialiased tracking-tight">
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         <motion.div 
@@ -21,25 +21,25 @@ export default function LandingPage() {
             alt="Steak on Grill" 
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#111] via-transparent to-[#111]/50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/70" />
         </motion.div>
         
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
-            <Flame className="w-16 h-16 text-red-600 mx-auto mb-6" />
-            <h1 className="text-6xl md:text-8xl font-bold tracking-tighter mb-4 text-gray-900 dark:text-white">
+            <Flame className="w-16 h-16 text-red-500 mx-auto mb-6" />
+            <h1 className="text-5xl md:text-8xl font-black tracking-tighter mb-4 text-white">
               BLOCK HOUSE
             </h1>
-            <p className="text-xl md:text-3xl font-light text-gray-300 mb-8 tracking-wide">
-              Premium Steak Experience
+            <p className="text-lg md:text-2xl font-light text-gray-300 mb-8 tracking-wide">
+              Premium Steak Experience • Crafted Quality
             </p>
             <Link 
               to="/menu?table=1" 
-              className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-red-600 rounded-full hover:bg-red-700 transition-colors shadow-[0_0_20px_rgba(220,38,38,0.4)]"
+              className="inline-flex items-center justify-center px-8 py-3.5 text-base font-semibold text-white bg-[#007aff] dark:bg-[#0a84ff] rounded-[14px] hover:scale-105 transition-all duration-300 shadow-md"
             >
               Menü ansehen (Demo)
             </Link>
@@ -48,48 +48,49 @@ export default function LandingPage() {
       </section>
 
       {/* About Section */}
-      <section className="py-24 px-4 bg-white dark:bg-[#1a1a1a]">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
-          <div>
-            <h2 className="text-4xl font-bold mb-6 text-red-500">Über uns</h2>
-            <p className="text-gray-300 text-lg leading-relaxed mb-6">
+      <section className="py-20 px-4 bg-white dark:bg-[#1c1c1e]">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6">
+            <span className="text-sm font-bold text-[#ff3b30] uppercase tracking-wider">UNSERE PHILOSOPHIE</span>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-[#1c1c1e] dark:text-white">Über uns</h2>
+            <p className="text-gray-600 dark:text-gray-300 text-base md:text-lg leading-relaxed">
               Seit Jahrzehnten steht BLOCK HOUSE für kompromisslose Qualität und die Kunst des perfekten Grillens. 
               Wir verwenden nur die besten Zutaten und bereiten jedes Steak genau nach Ihren Wünschen auf dem offenen Feuer zu.
             </p>
-            <div className="grid grid-cols-2 gap-6 mt-12">
-              <div className="bg-gray-100 dark:bg-[#222] p-6 rounded-2xl border border-gray-100 dark:border-white/5 flex flex-col items-center text-center">
-                <ChefHat className="w-8 h-8 text-red-500 mb-4" />
-                <h3 className="text-lg font-bold mb-2">Meisterköche</h3>
+            <div className="grid grid-cols-2 gap-4 mt-8">
+              <div className="bg-[#f2f2f7] dark:bg-[#2c2c2e] p-5 rounded-[18px] border border-black/5 dark:border-white/5 flex flex-col items-center text-center">
+                <ChefHat className="w-8 h-8 text-[#ff3b30] mb-3" />
+                <h3 className="text-sm font-bold text-[#1c1c1e] dark:text-white">Meisterköche</h3>
               </div>
-              <div className="bg-gray-100 dark:bg-[#222] p-6 rounded-2xl border border-gray-100 dark:border-white/5 flex flex-col items-center text-center">
-                <Flame className="w-8 h-8 text-red-500 mb-4" />
-                <h3 className="text-lg font-bold mb-2">Offenes Feuer</h3>
+              <div className="bg-[#f2f2f7] dark:bg-[#2c2c2e] p-5 rounded-[18px] border border-black/5 dark:border-white/5 flex flex-col items-center text-center">
+                <Flame className="w-8 h-8 text-[#ff3b30] mb-3" />
+                <h3 className="text-sm font-bold text-[#1c1c1e] dark:text-white">Offenes Feuer</h3>
               </div>
             </div>
           </div>
           <div className="relative">
             <motion.img 
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
               src="https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&q=80&w=800" 
               alt="Filet Mignon" 
-              className="rounded-3xl shadow-2xl"
+              className="rounded-[24px] shadow-lg border border-black/5 dark:border-white/5 w-full"
               referrerPolicy="no-referrer"
             />
             {/* Animated floating element */}
             <motion.div 
-              animate={{ y: [0, -15, 0] }}
+              animate={{ y: [0, -10, 0] }}
               transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-              className="absolute -bottom-6 -left-6 bg-white dark:bg-[#222] p-4 rounded-2xl shadow-xl border border-gray-100 dark:border-white/5 flex items-center gap-4"
+              className="absolute -bottom-4 -left-4 bg-white/95 dark:bg-[#2c2c2e]/95 backdrop-blur-md p-4 rounded-[18px] shadow-lg border border-black/5 dark:border-white/5 flex items-center gap-3"
             >
-              <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
-                <Star size={24} className="fill-red-500" />
+              <div className="w-10 h-10 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                <Star size={20} className="fill-red-500" />
               </div>
               <div>
-                <p className="font-bold">Premium</p>
-                <p className="text-sm text-gray-500">Qualität</p>
+                <p className="font-bold text-sm text-gray-900 dark:text-white">Premium</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Qualität</p>
               </div>
             </motion.div>
           </div>
@@ -97,13 +98,14 @@ export default function LandingPage() {
       </section>
 
       {/* Featured Dishes */}
-      <section className="py-24 px-4 bg-gray-50 dark:bg-[#111]">
+      <section className="py-20 px-4 bg-[#f2f2f7] dark:bg-black">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4 text-red-500">Beliebte Gerichte</h2>
-            <p className="text-gray-500 dark:text-gray-400">Unsere meistverkauften Spezialitäten</p>
+          <div className="text-center mb-12">
+            <span className="text-sm font-bold text-[#ff3b30] uppercase tracking-wider">GASTRONOMIE</span>
+            <h2 className="text-3xl md:text-4xl font-extrabold mt-1 text-[#1c1c1e] dark:text-white">Beliebte Gerichte</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Unsere meistverkauften Spezialitäten</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6">
             {[
               { name: 'Ribeye Steak', desc: 'Saftiges Ribeye, perfekt marmoriert.', img: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800' },
               { name: 'BLOCK HOUSE Burger', desc: '200g Beef, Cheddar, Bacon, BBQ Sauce.', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800' },
@@ -111,27 +113,25 @@ export default function LandingPage() {
             ].map((dish, i) => (
               <motion.div 
                 key={i} 
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.2 }}
-                className="bg-white dark:bg-[#1a1a1a] rounded-3xl overflow-hidden border border-gray-100 dark:border-white/5 group relative hover:shadow-[0_10px_40px_-10px_rgba(239,68,68,0.3)] dark:hover:shadow-[0_10px_40px_-10px_rgba(234,179,8,0.2)] transition-all duration-500 hover:-translate-y-2"
+                transition={{ duration: 0.5, delay: i * 0.15 }}
+                className="bg-white dark:bg-[#1c1c1e] rounded-[24px] overflow-hidden border border-black/5 dark:border-white/5 group relative hover:shadow-lg transition-all duration-300"
               >
-                <div className="absolute inset-0 bg-gradient-to-tr from-red-500/0 via-red-500/0 to-red-500/0 group-hover:from-red-500/5 group-hover:via-transparent group-hover:to-yellow-500/5 transition-colors duration-500 pointer-events-none z-10"></div>
-                <div className="h-64 overflow-hidden relative">
+                <div className="h-56 overflow-hidden relative">
                   <img 
                     src={dish.img} 
                     alt={dish.name} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     referrerPolicy="no-referrer"
                   />
                 </div>
-                <div className="p-6 relative z-20">
-                  <h3 className="text-xl font-bold mb-2 relative inline-block self-start">
+                <div className="p-5">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
                     {dish.name}
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-red-500 transition-all duration-500 group-hover:w-full"></span>
                   </h3>
-                  <p className="text-gray-500 dark:text-gray-400">{dish.desc}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{dish.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -140,29 +140,32 @@ export default function LandingPage() {
       </section>
 
       {/* Contact & Location */}
-      <section className="py-24 px-4 bg-white dark:bg-[#1a1a1a]">
+      <section className="py-20 px-4 bg-white dark:bg-[#1c1c1e]">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl font-bold mb-12 text-center text-red-500">Kontakt & Standort</h2>
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
-            <div className="bg-white dark:bg-[#1a1a1a] p-8 rounded-3xl border border-gray-100 dark:border-white/5 text-center flex flex-col items-center">
-              <MapPin className="w-10 h-10 text-red-500 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Adresse</h3>
-              <p className="text-gray-500 dark:text-gray-400">Steakstraße 1<br/>10115 Berlin</p>
+          <div className="text-center mb-12">
+            <span className="text-sm font-bold text-[#ff3b30] uppercase tracking-wider">BESUCHEN SIE UNS</span>
+            <h2 className="text-3xl md:text-4xl font-extrabold mt-1 text-gray-900 dark:text-white">Kontakt & Standort</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6 mb-10">
+            <div className="bg-[#f2f2f7] dark:bg-[#2c2c2e] p-6 rounded-[20px] border border-black/5 dark:border-white/5 text-center flex flex-col items-center">
+              <MapPin className="w-8 h-8 text-[#ff3b30] mb-3" />
+              <h3 className="text-base font-bold mb-1 text-gray-900 dark:text-white">Adresse</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Steakstraße 1<br/>10115 Berlin</p>
             </div>
-            <div className="bg-white dark:bg-[#1a1a1a] p-8 rounded-3xl border border-gray-100 dark:border-white/5 text-center flex flex-col items-center">
-              <Phone className="w-10 h-10 text-red-500 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Telefon</h3>
-              <p className="text-gray-500 dark:text-gray-400">+49 30 1234567<br/>Reservierungen erbeten</p>
+            <div className="bg-[#f2f2f7] dark:bg-[#2c2c2e] p-6 rounded-[20px] border border-black/5 dark:border-white/5 text-center flex flex-col items-center">
+              <Phone className="w-8 h-8 text-[#ff3b30] mb-3" />
+              <h3 className="text-base font-bold mb-1 text-gray-900 dark:text-white">Telefon</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">+49 30 1234567<br/>Reservierungen erbeten</p>
             </div>
-            <div className="bg-white dark:bg-[#1a1a1a] p-8 rounded-3xl border border-gray-100 dark:border-white/5 text-center flex flex-col items-center">
-              <Clock className="w-10 h-10 text-red-500 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Öffnungszeiten</h3>
-              <p className="text-gray-500 dark:text-gray-400">Täglich: 11:30 - 23:00<br/>Küche bis 22:30</p>
+            <div className="bg-[#f2f2f7] dark:bg-[#2c2c2e] p-6 rounded-[20px] border border-black/5 dark:border-white/5 text-center flex flex-col items-center">
+              <Clock className="w-8 h-8 text-[#ff3b30] mb-3" />
+              <h3 className="text-base font-bold mb-1 text-gray-900 dark:text-white">Öffnungszeiten</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Täglich: 11:30 - 23:00<br/>Küche bis 22:30</p>
             </div>
           </div>
           
           {/* Map */}
-          <div className="h-[400px] bg-gray-100 dark:bg-[#222] rounded-3xl border border-gray-200 dark:border-white/10 overflow-hidden relative">
+          <div className="h-[380px] bg-gray-100 dark:bg-[#222] rounded-[24px] border border-black/5 dark:border-white/5 overflow-hidden relative">
             <iframe 
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2427.631584992987!2d13.388910315807663!3d52.52191837981446!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47a851e873915155%3A0x633510c4103100!2sBlock%20House%20Friedrichstra%C3%9Fe!5e0!3m2!1sen!2sde!4v1683050000000!5m2!1sen!2sde" 
               width="100%" 
@@ -177,9 +180,9 @@ export default function LandingPage() {
               href="https://goo.gl/maps/xyz" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="absolute bottom-6 right-6 bg-red-600 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+              className="absolute bottom-4 right-4 bg-[#007aff] text-white px-5 py-2.5 rounded-[12px] text-sm font-semibold shadow-md hover:scale-105 transition-transform flex items-center gap-2"
             >
-              <MapPin size={20} />
+              <MapPin size={16} />
               Wegbeschreibung
             </a>
           </div>
@@ -187,10 +190,10 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 border-t border-gray-200 dark:border-white/10 text-center text-gray-500 text-sm">
+      <footer className="py-8 border-t border-black/5 dark:border-white/5 text-center text-gray-500 text-xs">
         <p>&copy; 2026 BLOCK HOUSE Demo. Alle Rechte vorbehalten.</p>
         <div className="mt-4 flex justify-center gap-4">
-          <Link to="/admin" className="hover:text-gray-900 dark:text-white transition-colors">Admin Login</Link>
+          <Link to="/admin" className="text-[#007aff] hover:underline">Admin Login</Link>
         </div>
       </footer>
     </div>

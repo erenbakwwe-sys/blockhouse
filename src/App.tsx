@@ -16,6 +16,12 @@ import AdminMenu from './pages/AdminMenu';
 import AdminCalls from './pages/AdminCalls';
 import AdminHistory from './pages/AdminHistory';
 import AdminFinance from './pages/AdminFinance';
+import AdminPOS from './pages/AdminPOS';
+import AdminStock from './pages/AdminStock';
+import AdminStaff from './pages/AdminStaff';
+import AdminCoupons from './pages/AdminCoupons';
+import AdminAITheme from './pages/AdminAITheme';
+import AdminCampaigns from './pages/AdminCampaigns';
 import AdminLayout from './components/AdminLayout';
 import CustomerLayout from './components/CustomerLayout';
 
@@ -42,9 +48,15 @@ export default function App() {
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
+            <Route path="pos" element={<AdminPOS />} />
             <Route path="tables" element={<AdminTables />} />
             <Route path="menu" element={<AdminMenu />} />
+            <Route path="stock" element={<AdminStock />} />
+            <Route path="staff" element={<AdminStaff />} />
+            <Route path="coupons" element={<AdminCoupons />} />
+            <Route path="ai-theme" element={<AdminAITheme />} />
             <Route path="calls" element={<AdminCalls />} />
+            <Route path="campaigns" element={<AdminCampaigns />} />
             <Route path="history" element={<AdminHistory />} />
             <Route path="finance" element={<AdminFinance />} />
           </Route>

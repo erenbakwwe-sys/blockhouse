@@ -7,6 +7,7 @@ import { formatCurrency } from '../lib/utils';
 import { OrderStatus } from '../types';
 import ThemeToggle from '../components/ThemeToggle';
 import { TRANSLATIONS } from '../lib/translations';
+import ScratchCardGame from '../components/ScratchCardGame';
 
 export default function OrderStatusPage() {
   const [searchParams] = useSearchParams();
@@ -79,59 +80,64 @@ export default function OrderStatusPage() {
   const currentStepIndex = STATUS_STEPS.findIndex(s => s.status === currentOrder.status);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#111] pb-24">
+    <div className="min-h-screen bg-[#f2f2f7] dark:bg-black pb-24 selection:bg-[#007aff]/20 antialiased tracking-tight">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-gray-50 dark:bg-[#111]/90 backdrop-blur-md border-b border-gray-200 dark:border-white/10 px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <header className="sticky top-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-black/5 dark:border-white/10 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
           <button 
             onClick={() => navigate(`/menu?table=${table}`)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-[#222] hover:bg-gray-200 dark:hover:bg-[#333] transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-all"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={18} className="text-[#1c1c1e] dark:text-white" />
           </button>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">{t.orderStatus}</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Tisch {table} • #{currentOrder.id}</p>
+            <h1 className="text-base font-extrabold text-[#1c1c1e] dark:text-white">{t.orderStatus}</h1>
+            <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Tisch {table} • #{currentOrder.id}</p>
           </div>
         </div>
         <ThemeToggle />
       </header>
 
-      <main className="p-4 max-w-2xl mx-auto space-y-8 mt-4">
+      <main className="p-4 max-w-2xl mx-auto space-y-6">
+        {/* Interactive Scratch Card Game */}
+        <ScratchCardGame orderId={currentOrder.id} table={table} />
+
         {/* Status Tracker */}
-        <section className="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-white/5">
+        <section className="bg-white dark:bg-[#1c1c1e] p-6 rounded-[24px] border border-black/5 dark:border-white/10 shadow-sm">
           <div className="relative">
             {/* Progress Line */}
-            <div className="absolute left-[1.1rem] top-8 bottom-8 w-0.5 bg-[#333]" />
+            <div className="absolute left-[1.1rem] top-8 bottom-8 w-0.5 bg-black/10 dark:bg-white/10" />
             <div 
-              className="absolute left-[1.1rem] top-8 w-0.5 bg-red-600 transition-all duration-500"
+              className="absolute left-[1.1rem] top-8 w-0.5 bg-[#007aff] dark:bg-[#0a84ff] transition-all duration-500"
               style={{ height: `${(currentStepIndex / (STATUS_STEPS.length - 1)) * 100}%` }}
             />
 
-            <div className="space-y-8 relative">
+            <div className="space-y-7 relative">
               {STATUS_STEPS.map((step, index) => {
                 const isCompleted = index <= currentStepIndex;
                 const isCurrent = index === currentStepIndex;
                 const Icon = step.icon;
 
                 return (
-                  <div key={step.status} className="flex items-center gap-6">
+                  <div key={step.status} className="flex items-center gap-5">
                     <div 
-                      className={`w-9 h-9 rounded-full flex items-center justify-center z-10 transition-colors duration-500 ${
-                        isCompleted ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]' : 'bg-[#333] text-gray-500'
+                      className={`w-9 h-9 rounded-full flex items-center justify-center z-10 transition-all duration-500 ${
+                        isCompleted 
+                          ? 'bg-[#007aff] dark:bg-[#0a84ff] text-white shadow-sm scale-110' 
+                          : 'bg-black/5 dark:bg-[#2c2c2e] text-gray-400'
                       }`}
                     >
-                      <Icon size={18} />
+                      <Icon size={16} />
                     </div>
                     <div>
-                      <h3 className={`font-bold text-lg transition-colors duration-500 ${isCompleted ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>
+                      <h3 className={`font-bold text-sm transition-colors duration-500 ${isCompleted ? 'text-gray-950 dark:text-white' : 'text-gray-400'}`}>
                         {step.label}
                       </h3>
                       {isCurrent && (
                         <motion.p 
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
-                          className="text-sm text-red-500 mt-1"
+                          className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium leading-relaxed max-w-md"
                         >
                           {step.status === 'received' && t.statusReceivedDesc}
                           {step.status === 'preparing' && t.statusPreparingDesc}
@@ -148,25 +154,25 @@ export default function OrderStatusPage() {
         </section>
 
         {/* Order Details */}
-        <section className="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-white/5">
-          <h2 className="text-lg font-bold mb-4 text-gray-300">{t.orderDetails}</h2>
-          <div className="space-y-4 mb-6">
+        <section className="bg-white dark:bg-[#1c1c1e] p-5 rounded-[24px] border border-black/5 dark:border-white/10 shadow-sm">
+          <h2 className="text-xs font-bold mb-3.5 text-gray-400 dark:text-gray-500 uppercase tracking-wider pl-1">{t.orderDetails}</h2>
+          <div className="space-y-3 mb-4">
             {currentOrder.items.map((item, idx) => (
-              <div key={idx} className="flex justify-between items-center border-b border-gray-100 dark:border-white/5 pb-4 last:border-0 last:pb-0">
+              <div key={idx} className="flex justify-between items-center border-b border-black/[0.03] dark:border-white/[0.03] pb-3 last:border-0 last:pb-0">
                 <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-full bg-gray-100 dark:bg-[#222] flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-400">
+                  <span className="w-5.5 h-5.5 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-[10px] font-extrabold text-[#007aff] dark:text-[#0a84ff]">
                     {item.quantity}x
                   </span>
-                  <span className="font-medium">{item.name}</span>
+                  <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{item.name}</span>
                 </div>
-                <span className="text-gray-500 dark:text-gray-400">{formatCurrency(item.price * item.quantity)}</span>
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{formatCurrency(item.price * item.quantity)}</span>
               </div>
             ))}
           </div>
           
-          <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-white/10">
-            <span className="text-lg font-bold">{t.total}</span>
-            <span className="text-2xl font-bold text-red-500">{formatCurrency(currentOrder.total)}</span>
+          <div className="flex justify-between items-center pt-3.5 border-t border-black/5 dark:border-white/5">
+            <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{t.total}</span>
+            <span className="text-lg font-black text-[#ff3b30]">{formatCurrency(currentOrder.total)}</span>
           </div>
         </section>
       </main>

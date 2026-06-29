@@ -1,5 +1,6 @@
 {
-  "name": "Restaurant App",
-  "description": "A restaurant ordering and admin system",
-  "requestFramePermissions": ["microphone"]
+  "name": "SaaS QR Restoran & POS",
+  "description": "Premium QR Menü & Adisyon (POS) Restoran Yönetim Sistemi (SaaS)",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

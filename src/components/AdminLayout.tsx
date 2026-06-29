@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, QrCode, UtensilsCrossed, Bell, LogOut, History, Lock, LineChart, Menu, X, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, QrCode, UtensilsCrossed, Bell, LogOut, History, Lock, LineChart, Menu, X, ArrowLeft, CreditCard, Package, Users, Ticket, Sparkles, Mail } from 'lucide-react';
 import { useStore } from '../store/StoreContext';
 import React, { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
@@ -305,6 +305,10 @@ export default function AdminLayout() {
             <LayoutDashboard size={20} className={blinkOrder ? "animate-pulse text-red-400" : ""} />
             <span className="font-medium">Dashboard</span>
           </NavLink>
+          <NavLink to="/admin/pos" className={({isActive}) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive ? 'bg-red-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}>
+            <CreditCard size={20} />
+            <span className="font-medium">POS & Kasse</span>
+          </NavLink>
           <NavLink to="/admin/menu" className={({isActive}) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive ? 'bg-red-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}>
             <UtensilsCrossed size={20} />
             <span className="font-medium">Speisekarte</span>
@@ -312,6 +316,22 @@ export default function AdminLayout() {
           <NavLink to="/admin/tables" className={({isActive}) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive ? 'bg-red-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}>
             <QrCode size={20} />
             <span className="font-medium">Tische & QR</span>
+          </NavLink>
+          <NavLink to="/admin/stock" className={({isActive}) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive ? 'bg-red-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}>
+            <Package size={20} />
+            <span className="font-medium">Lagerbestand</span>
+          </NavLink>
+          <NavLink to="/admin/staff" className={({isActive}) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive ? 'bg-red-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}>
+            <Users size={20} />
+            <span className="font-medium">Personal & Filiale</span>
+          </NavLink>
+          <NavLink to="/admin/coupons" className={({isActive}) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive ? 'bg-red-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}>
+            <Ticket size={20} />
+            <span className="font-medium">Coupons & Happy Hour</span>
+          </NavLink>
+          <NavLink to="/admin/ai-theme" className={({isActive}) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive ? 'bg-red-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}>
+            <Sparkles size={20} />
+            <span className="font-medium">AI Theme</span>
           </NavLink>
           <NavLink to="/admin/calls" className={({isActive}) => `flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${isActive ? 'bg-red-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}>
             <div className="flex items-center gap-3">
@@ -331,6 +351,10 @@ export default function AdminLayout() {
           <NavLink to="/admin/finance" className={({isActive}) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive ? 'bg-red-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}>
             <LineChart size={20} />
             <span className="font-medium">Finanzen</span>
+          </NavLink>
+          <NavLink to="/admin/campaigns" className={({isActive}) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive ? 'bg-red-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}>
+            <Mail size={20} className="text-indigo-500" />
+            <span className="font-medium">Kampagnen & Leads</span>
           </NavLink>
         </nav>
         

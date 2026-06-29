@@ -89,6 +89,105 @@
         "estimatedPrepTime": { "type": "number" }
       },
       "required": ["estimatedPrepTime"]
+    },
+    "POSItem": {
+      "title": "POSItem",
+      "description": "Represents an item in a POS tab.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "quantity": { "type": "number" }
+      },
+      "required": ["name", "price", "quantity"]
+    },
+    "TableTab": {
+      "title": "TableTab",
+      "description": "Represents a billing tab for a table.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "table": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/entities/POSItem" }
+        },
+        "discount": { "type": "number" },
+        "tip": { "type": "number" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["id", "table", "items", "discount", "tip", "active"]
+    },
+    "StockItem": {
+      "title": "StockItem",
+      "description": "Represents a raw material stock item.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "unit": { "type": "string" },
+        "qty": { "type": "number" },
+        "remaining": { "type": "number" },
+        "unitCost": { "type": "number" }
+      },
+      "required": ["name", "unit", "qty", "remaining", "unitCost"]
+    },
+    "StaffMember": {
+      "title": "StaffMember",
+      "description": "Represents a restaurant staff member.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "pin": { "type": "string" },
+        "role": { "type": "string" }
+      },
+      "required": ["name", "pin", "role"]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "Represents a discount coupon.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "value": { "type": "number" },
+        "type": { "type": "string", "enum": ["percent", "flat"] },
+        "minSpend": { "type": "number" },
+        "limit": { "type": "number" },
+        "expiry": { "type": "string" }
+      },
+      "required": ["code", "value", "type", "minSpend", "limit", "expiry"]
+    },
+    "ScratchLead": {
+      "title": "ScratchLead",
+      "description": "Represents a customer who won a prize in the Scratch Card game.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "gift": { "type": "string" },
+        "table": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "claimed": { "type": "boolean" }
+      },
+      "required": ["id", "name", "email", "phone", "gift", "table", "createdAt", "claimed"]
+    },
+    "Campaign": {
+      "title": "Campaign",
+      "description": "Represents an email marketing campaign sent to customer leads.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "body": { "type": "string" },
+        "rewardType": { "type": "string" },
+        "targetCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["draft", "sent"] },
+        "createdAt": { "type": "number" },
+        "sentAt": { "type": "number" }
+      },
+      "required": ["id", "title", "subject", "body", "rewardType", "targetCount", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -115,6 +214,30 @@
     "settings": {
       "schema": { "$ref": "#/entities/GlobalSettings" },
       "description": "Collection of global settings."
+    },
+    "tabs": {
+      "schema": { "$ref": "#/entities/TableTab" },
+      "description": "Collection of billing tabs."
+    },
+    "stock": {
+      "schema": { "$ref": "#/entities/StockItem" },
+      "description": "Collection of raw stock items."
+    },
+    "staff": {
+      "schema": { "$ref": "#/entities/StaffMember" },
+      "description": "Collection of staff members."
+    },
+    "coupons": {
+      "schema": { "$ref": "#/entities/Coupon" },
+      "description": "Collection of coupons."
+    },
+    "scratch_leads": {
+      "schema": { "$ref": "#/entities/ScratchLead" },
+      "description": "Collection of customer leads from Scratch Card game."
+    },
+    "campaigns": {
+      "schema": { "$ref": "#/entities/Campaign" },
+      "description": "Collection of email campaign history."
     }
   }
 }

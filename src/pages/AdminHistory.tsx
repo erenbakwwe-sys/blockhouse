@@ -1,6 +1,7 @@
 import { useStore } from '../store/StoreContext';
 import { formatCurrency } from '../lib/utils';
-import { History, Receipt, Bell, CheckCircle2, Trash2, X } from 'lucide-react';
+import { History, Receipt, Bell, CheckCircle2, Trash2, X, Printer } from 'lucide-react';
+import { printThermalReceipt } from '../lib/printReceipt';
 import { OrderStatus } from '../types';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
@@ -16,6 +17,30 @@ export default function AdminHistory() {
     clearHistory();
     setShowConfirmModal(false);
     toast.success('Verlauf wurde gelöscht');
+  };
+
+  const handlePrint = (order: any) => {
+    try {
+      printThermalReceipt({
+        id: order.id,
+        table: order.table,
+        createdAt: order.createdAt,
+        items: order.items.map((i: any) => ({
+          name: i.name,
+          quantity: i.quantity,
+          price: i.price,
+          options: i.options,
+          notes: i.notes
+        })),
+        subtotal: order.total,
+        total: order.total,
+        paymentMethod: order.paymentMethod || order.paymentType
+      });
+      toast.success('Druckerdialog geöffnet!');
+    } catch (error) {
+      console.error('Print error:', error);
+      toast.error('Fehler beim Öffnen des Druckerdialogs.');
+    }
   };
 
   const getStatusColor = (status: OrderStatus) => {
@@ -109,6 +134,7 @@ export default function AdminHistory() {
                     <th className="px-6 py-4 font-medium">Artikel</th>
                     <th className="px-6 py-4 font-medium">Status</th>
                     <th className="px-6 py-4 font-medium text-right">Betrag</th>
+                    <th className="px-6 py-4 font-medium text-center">Aktion</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -144,11 +170,20 @@ export default function AdminHistory() {
                       <td className="px-6 py-4 text-red-500 font-medium text-right">
                         {formatCurrency(order.total)}
                       </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handlePrint(order)}
+                          className="p-1.5 bg-gray-100 dark:bg-[#222] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors inline-flex items-center justify-center cursor-pointer"
+                          title="Beleg drucken"
+                        >
+                          <Printer size={16} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {sortedOrders.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                         Keine Bestellungen im Verlauf.
                       </td>
                     </tr>
